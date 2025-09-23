@@ -40,15 +40,15 @@ Sempre seja preciso, profissional e mantenha a confidencialidade médica. Respon
 // Configuração da API OpenAI usando as configurações salvas
 let chatSettings = getChatSettings();
 
+// Verifica se a API key está configurada
+if (!chatSettings.apiKey || chatSettings.apiKey === 'your-openai-api-key-here') {
+  console.warn('API key da OpenAI não está configurada ou é inválida. O chat não funcionará.');
+}
+
 const openai = new OpenAI({
   apiKey: chatSettings.apiKey,
   dangerouslyAllowBrowser: true
 });
-
-// Verifica se a API key está configurada
-if (!chatSettings.apiKey) {
-  console.warn('API key da OpenAI não está configurada. O chat não funcionará.');
-}
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -98,11 +98,11 @@ export class OpenAIService {
       chatSettings = getChatSettings();
 
       // Verifica se a API key está disponível
-      if (!chatSettings.apiKey) {
-        console.error('API key da OpenAI não configurada');
+      if (!chatSettings.apiKey || chatSettings.apiKey === '') {
+        console.error('API key da OpenAI não configurada ou inválida');
         return {
-          message: 'Desculpe, o serviço de chat não está disponível no momento. Entre em contato com o administrador.',
-          error: 'API key não configurada'
+          message: 'Desculpe, o serviço de chat não está disponível no momento. A chave da API OpenAI não está configurada corretamente. Entre em contato com o administrador.',
+          error: 'API key não configurada ou inválida'
         };
       }
 

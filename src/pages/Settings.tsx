@@ -55,6 +55,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useSystemLogs } from '@/hooks/useSystemLogs'
 import { useChatSettings } from '@/hooks/useChatSettings'
+import { useToast } from '@/hooks/use-toast'
 
 interface User {
   id: string
@@ -341,6 +342,8 @@ export default function Settings() {
     setChatSettings(prev => ({ ...prev, [key]: value }))
   }
 
+  const { toast } = useToast()
+
   const handleSaveChatSettings = () => {
     const validation = validateSettings(chatSettings)
     setChatSettingsErrors(validation.errors)
@@ -349,11 +352,26 @@ export default function Settings() {
       const success = saveChatSettings(chatSettings)
       if (success) {
         addLog('info', 'Configurações do chat atualizadas', user?.name || 'Sistema')
+        toast({
+          title: "Configurações atualizadas",
+          description: "As configurações do chat foram salvas com sucesso.",
+          variant: "success"
+        })
       } else {
         addLog('error', 'Erro ao salvar configurações do chat', user?.name || 'Sistema')
+        toast({
+          title: "Erro",
+          description: "Não foi possível salvar as configurações do chat.",
+          variant: "destructive"
+        })
       }
     } else {
       addLog('warning', 'Configurações do chat inválidas', user?.name || 'Sistema')
+      toast({
+        title: "Validação falhou",
+        description: "Verifique os campos destacados e tente novamente.",
+        variant: "warning"
+      })
     }
   }
 

@@ -126,13 +126,26 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
       // Remove mensagem de loading e adiciona resposta
       setMessages(prev => {
         const filtered = prev.filter(msg => !msg.isLoading);
-        const assistantMessage: ChatMessageWithId = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: response.message,
-          timestamp: new Date()
-        };
-        return [...filtered, assistantMessage];
+        
+        // Verifica se houve erro
+        if (response.error) {
+          const errorMessage: ChatMessageWithId = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `⚠️ ${response.message}`,
+            timestamp: new Date()
+          };
+          console.error('Erro no chat:', response.error);
+          return [...filtered, errorMessage];
+        } else {
+          const assistantMessage: ChatMessageWithId = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: response.message,
+            timestamp: new Date()
+          };
+          return [...filtered, assistantMessage];
+        }
       });
 
     } catch (error) {

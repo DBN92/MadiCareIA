@@ -26,7 +26,7 @@ O chat não funcionava em produção devido à falta de configuração adequada 
 # 1. Configure as variáveis de ambiente
 # Copie o arquivo .env.production e configure com suas chaves reais
 cp .env.production .env
-# Edite o arquivo .env e substitua 'your-openai-api-key-here' pela sua API key real
+# Edite o arquivo .env e adicione sua API key da OpenAI na variável VITE_OPENAI_API_KEY
 
 # 2. Execute o build e deploy
 docker-compose up --build -d

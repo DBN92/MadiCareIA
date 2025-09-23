@@ -55,9 +55,15 @@ export function useChatSettings() {
     }
   }, []);
 
-  // Salva configurações no localStorage
+  // Salva as configurações no localStorage
   const saveSettings = (newSettings: ChatSettings) => {
     try {
+      // Validação adicional para evitar salvar API key inválida
+      if (newSettings.apiKey === 'your-openai-api-key-here') {
+        console.error('Tentativa de salvar API key inválida');
+        return false;
+      }
+      
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
       setSettings(newSettings);
       return true;
@@ -87,6 +93,8 @@ export function useChatSettings() {
 
     if (!settingsToValidate.apiKey.trim()) {
       errors.push('Chave da API é obrigatória');
+    } else if (settingsToValidate.apiKey === 'your-openai-api-key-here') {
+      errors.push('Chave da API inválida. Use uma chave API válida da OpenAI');
     }
 
     if (!settingsToValidate.model.trim()) {
