@@ -12,7 +12,7 @@ export interface ChatSettings {
 
 const DEFAULT_SETTINGS: ChatSettings = {
   apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-  model: 'gpt-3.5-turbo',
+  model: 'gpt-4o-mini',
   temperature: 0.7,
   maxTokens: 1000,
   presencePenalty: 0.1,
