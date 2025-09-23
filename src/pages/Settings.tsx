@@ -341,13 +341,19 @@ export default function Settings() {
     setChatSettings(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleSaveChatSettings = async () => {
+  const handleSaveChatSettings = () => {
     const validation = validateSettings(chatSettings)
     setChatSettingsErrors(validation.errors)
     
     if (validation.isValid) {
-      await saveChatSettings(chatSettings)
-      addLog('info', 'Configurações do chat atualizadas', user?.name || 'Sistema')
+      const success = saveChatSettings(chatSettings)
+      if (success) {
+        addLog('info', 'Configurações do chat atualizadas', user?.name || 'Sistema')
+      } else {
+        addLog('error', 'Erro ao salvar configurações do chat', user?.name || 'Sistema')
+      }
+    } else {
+      addLog('warning', 'Configurações do chat inválidas', user?.name || 'Sistema')
     }
   }
 
