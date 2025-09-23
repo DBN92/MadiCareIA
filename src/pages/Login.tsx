@@ -95,8 +95,8 @@ export default function Login() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Header */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg border border-red-100">
-            <ColoSaudeLogo size="sm" />
+          <div className="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg border border-red-100">
+            <ColoSaudeLogo size="md" />
           </div>
           <h1 className="text-2xl font-bold text-red-900">MediCare</h1>
           <p className="text-red-700">Sistema de Gestão Hospitalar</p>

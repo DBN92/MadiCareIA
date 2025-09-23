@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background circle for better visibility -->
+  <circle cx="512" cy="512" r="512" fill="#f8f9fa"/>
+  
+  <!-- Medical cross with caduceus symbol -->
+  <g transform="translate(512, 300)">
+    <!-- Cross background -->
+    <path d="M-80 -80 L80 -80 L80 -40 L40 -40 L40 40 L80 40 L80 80 L-80 80 L-80 40 L-40 40 L-40 -40 L-80 -40 Z" 
+          fill="#c53030" 
+          rx="20" 
+          ry="20"/>
+    
+    <!-- Caduceus staff -->
+    <line x1="0" y1="-60" x2="0" y2="60" stroke="#f7fafc" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Wings -->
+    <path d="M-50 -40 Q-70 -50 -80 -35 Q-70 -20 -50 -30 Q-30 -35 -20 -40 Q-30 -45 -50 -40 Z" 
+          fill="#f7fafc"/>
+    <path d="M50 -40 Q70 -50 80 -35 Q70 -20 50 -30 Q30 -35 20 -40 Q30 -45 50 -40 Z" 
+          fill="#f7fafc"/>
+    
+    <!-- Serpents -->
+    <path d="M-15 -30 Q-25 -20 -15 -10 Q-5 0 -15 10 Q-25 20 -15 30 Q-5 40 -15 50" 
+          stroke="#f7fafc" 
+          stroke-width="6" 
+          fill="none" 
+          stroke-linecap="round"/>
+    <path d="M15 -30 Q25 -20 15 -10 Q5 0 15 10 Q25 20 15 30 Q5 40 15 50" 
+          stroke="#f7fafc" 
+          stroke-width="6" 
+          fill="none" 
+          stroke-linecap="round"/>
+    
+    <!-- Serpent heads -->
+    <circle cx="-15" cy="-35" r="4" fill="#f7fafc"/>
+    <circle cx="15" cy="-35" r="4" fill="#f7fafc"/>
+    <circle cx="-13" cy="-37" r="1" fill="#c53030"/>
+    <circle cx="17" cy="-37" r="1" fill="#c53030"/>
+    
+    <!-- Top orb -->
+    <circle cx="0" cy="-70" r="8" fill="#f7fafc"/>
+  </g>
+  
+  <!-- MEDICARE text -->
+  <text x="512" y="700" 
+        font-family="Arial, sans-serif" 
+        font-size="120" 
+        font-weight="bold" 
+        text-anchor="middle" 
+        fill="#2d3748">
+    MEDICARE
+  </text>
+</svg>

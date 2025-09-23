@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const DEFAULT_LOGO_URL = 'https://www.colosaude.com.br/doutor/uploads/0/logo/2025/06/emp-colo-certo-aa1f1.png';
+const DEFAULT_LOGO_URL = '/medicare-logo.svg';
 const LOGO_STORAGE_KEY = 'medicare-custom-logo';
 
 export interface LogoState {

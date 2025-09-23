@@ -58,7 +58,7 @@ export function AppSidebar() {
         <div className="p-4 border-b border-border/30 flex-shrink-0">
           <div className="flex items-center justify-center gap-3">
             <div className="p-2 bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg flex-shrink-0 transition-transform duration-300 hover:scale-105">
-                <ColoSaudeLogo size="sm" />
+                <ColoSaudeLogo size="md" />
               </div>
             {!isCollapsed && (
               <div className="transition-all duration-300 ease-out text-center">

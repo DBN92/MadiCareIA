@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { useCareEvents } from "@/hooks/useCareEvents"
 import { 
   Droplets, 
   Utensils, 
@@ -27,6 +28,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
   const [activeTab, setActiveTab] = useState("liquids")
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const { addEvent } = useCareEvents(patientId)
   
   // Função para obter data e hora atual no formato correto
   const getCurrentDateTime = () => {
@@ -205,6 +207,10 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           break
       }
       
+      // Usar addEvent diretamente em vez de onSave
+      await addEvent(data)
+      
+      // Chamar onSave se fornecido (para compatibilidade)
       await onSave?.(data)
       
       // Limpar formulário após sucesso
