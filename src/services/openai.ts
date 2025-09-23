@@ -6,6 +6,11 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
+// Verifica se a API key está configurada
+if (!import.meta.env.VITE_OPENAI_API_KEY) {
+  console.warn('VITE_OPENAI_API_KEY não está configurada. O chat não funcionará.');
+}
+
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -54,6 +59,15 @@ export class OpenAIService {
     contextData?: Record<string, unknown>
   ): Promise<AssistantResponse> {
     try {
+      // Verifica se a API key está disponível
+      if (!import.meta.env.VITE_OPENAI_API_KEY) {
+        console.error('API key da OpenAI não configurada');
+        return {
+          message: 'Desculpe, o serviço de chat não está disponível no momento. Entre em contato com o administrador.',
+          error: 'API key não configurada'
+        };
+      }
+
       // Adiciona contexto dos dados do Supabase se fornecido
       let enhancedMessage = userMessage;
       if (contextData) {
@@ -99,6 +113,14 @@ export class OpenAIService {
 
     } catch (error) {
       console.error('Erro ao comunicar com OpenAI:', error);
+      
+      // Verifica se é um erro de autenticação
+      if (error instanceof Error && error.message.includes('401')) {
+        return {
+          message: 'Erro de autenticação com o serviço de chat. Verifique as configurações.',
+          error: 'Erro de autenticação'
+        };
+      }
       
       return {
         message: 'Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.',
