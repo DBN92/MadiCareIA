@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const DEFAULT_LOGO_URL = '/medicare-logo.svg';
+const DEFAULT_LOGO_URL = '/nurse-logo.svg';
 const LOGO_STORAGE_KEY = 'medicare-custom-logo';
 
 export interface LogoState {

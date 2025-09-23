@@ -1,28 +1,25 @@
 import OpenAI from 'openai';
 
-// Configuração da API OpenAI
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-  dangerouslyAllowBrowser: true
-});
-
-// Verifica se a API key está configurada
-if (!import.meta.env.VITE_OPENAI_API_KEY) {
-  console.warn('VITE_OPENAI_API_KEY não está configurada. O chat não funcionará.');
-}
-
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface AssistantResponse {
-  message: string;
-  error?: string;
-}
-
-// Prompt do sistema para o assistente virtual
-const SYSTEM_PROMPT = `Você é um assistente virtual especializado no sistema MediCare, um sistema de gestão hospitalar.
+// Função para obter as configurações do chat do localStorage
+function getChatSettings() {
+  try {
+    const settings = localStorage.getItem('chatSettings');
+    if (settings) {
+      return JSON.parse(settings);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar configurações do chat:', error);
+  }
+  
+  // Configurações padrão se não houver no localStorage
+  return {
+    apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+    model: 'gpt-3.5-turbo',
+    temperature: 0.7,
+    maxTokens: 1000,
+    presencePenalty: 0.1,
+    frequencyPenalty: 0.1,
+    systemPrompt: `Você é um assistente virtual especializado no sistema MediCare, um sistema de gestão hospitalar.
 
 Você tem acesso aos seguintes dados do sistema:
 - Pacientes: informações pessoais, leitos, notas médicas
@@ -36,17 +33,55 @@ Suas responsabilidades:
 4. Auxiliar na análise de padrões de cuidado
 5. Sugerir melhorias nos cuidados com base nos dados
 
-Sempre seja preciso, profissional e mantenha a confidencialidade médica. Responda em português brasileiro.`;
+Sempre seja preciso, profissional e mantenha a confidencialidade médica. Responda em português brasileiro.`
+  };
+}
+
+// Configuração da API OpenAI usando as configurações salvas
+let chatSettings = getChatSettings();
+
+const openai = new OpenAI({
+  apiKey: chatSettings.apiKey,
+  dangerouslyAllowBrowser: true
+});
+
+// Verifica se a API key está configurada
+if (!chatSettings.apiKey) {
+  console.warn('API key da OpenAI não está configurada. O chat não funcionará.');
+}
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface AssistantResponse {
+  message: string;
+  error?: string;
+}
+
+// Prompt do sistema para o assistente virtual - será substituído pelas configurações salvas
+const SYSTEM_PROMPT = chatSettings.systemPrompt;
 
 export class OpenAIService {
   private conversationHistory: ChatMessage[] = [];
 
   constructor() {
-    // Inicializa a conversa com o prompt do sistema
+    // Recarrega as configurações do localStorage
+    this.reloadSettings();
+  }
+
+  /**
+   * Recarrega as configurações do localStorage
+   */
+  reloadSettings(): void {
+    chatSettings = getChatSettings();
+    
+    // Reinicializa a conversa com o novo prompt do sistema
     this.conversationHistory = [
       {
         role: 'system',
-        content: SYSTEM_PROMPT
+        content: chatSettings.systemPrompt
       }
     ];
   }
@@ -59,14 +94,23 @@ export class OpenAIService {
     contextData?: Record<string, unknown>
   ): Promise<AssistantResponse> {
     try {
+      // Recarrega as configurações antes de cada chamada
+      chatSettings = getChatSettings();
+
       // Verifica se a API key está disponível
-      if (!import.meta.env.VITE_OPENAI_API_KEY) {
+      if (!chatSettings.apiKey) {
         console.error('API key da OpenAI não configurada');
         return {
           message: 'Desculpe, o serviço de chat não está disponível no momento. Entre em contato com o administrador.',
           error: 'API key não configurada'
         };
       }
+
+      // Recria a instância do OpenAI com a nova API key se necessário
+      const currentOpenAI = new OpenAI({
+        apiKey: chatSettings.apiKey,
+        dangerouslyAllowBrowser: true
+      });
 
       // Adiciona contexto dos dados do Supabase se fornecido
       let enhancedMessage = userMessage;
@@ -80,14 +124,14 @@ export class OpenAIService {
         content: enhancedMessage
       });
 
-      // Chama a API da OpenAI
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      // Chama a API da OpenAI com as configurações atuais
+      const completion = await currentOpenAI.chat.completions.create({
+        model: chatSettings.model,
         messages: this.conversationHistory,
-        max_tokens: 1000,
-        temperature: 0.7,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+        max_tokens: chatSettings.maxTokens,
+        temperature: chatSettings.temperature,
+        presence_penalty: chatSettings.presencePenalty,
+        frequency_penalty: chatSettings.frequencyPenalty
       });
 
       const assistantMessage = completion.choices[0]?.message?.content || 'Desculpe, não consegui processar sua solicitação.';
@@ -157,10 +201,13 @@ export class OpenAIService {
    * Limpa o histórico da conversa
    */
   clearHistory(): void {
+    // Recarrega as configurações atuais
+    chatSettings = getChatSettings();
+    
     this.conversationHistory = [
       {
         role: 'system',
-        content: SYSTEM_PROMPT
+        content: chatSettings.systemPrompt
       }
     ];
   }

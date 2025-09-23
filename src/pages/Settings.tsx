@@ -29,7 +29,11 @@ import {
   CheckCircle,
   XCircle,
   Info,
-  Image
+  Image,
+  MessageCircle,
+  Bot,
+  Key,
+  Sliders
 } from "lucide-react"
 import {
   Table,
@@ -50,6 +54,7 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from '@/contexts/AuthContext'
 import { useSystemLogs } from '@/hooks/useSystemLogs'
+import { useChatSettings } from '@/hooks/useChatSettings'
 
 interface User {
   id: string
@@ -84,6 +89,7 @@ interface LogEntry {
 export default function Settings() {
   const { user, updateUserProfile } = useAuth()
   const { logs, addLog, clearLogs, exportLogs, getLogsByLevel } = useSystemLogs()
+  const { settings: globalChatSettings, saveSettings: saveChatSettings, resetToDefaults: resetChatSettings, validateSettings } = useChatSettings()
   
   const [users, setUsers] = useState<User[]>([
     {
@@ -151,6 +157,15 @@ export default function Settings() {
   })
 
   const [logFilter, setLogFilter] = useState<'all' | 'info' | 'warning' | 'error' | 'debug'>('all')
+
+  // Estados locais para configurações do chat
+  const [chatSettings, setChatSettings] = useState(globalChatSettings)
+  const [chatSettingsErrors, setChatSettingsErrors] = useState<string[]>([])
+
+  // Atualiza configurações locais quando as configurações globais mudam
+  useEffect(() => {
+    setChatSettings(globalChatSettings)
+  }, [globalChatSettings])
 
   // Adicionar alguns logs de exemplo quando o componente carrega
   useEffect(() => {
@@ -321,6 +336,28 @@ export default function Settings() {
     })
   }
 
+  // Funções para configurações do chat
+  const handleChatSettingChange = (key: keyof typeof chatSettings, value: any) => {
+    setChatSettings(prev => ({ ...prev, [key]: value }))
+  }
+
+  const handleSaveChatSettings = async () => {
+    const validation = validateSettings(chatSettings)
+    setChatSettingsErrors(validation.errors)
+    
+    if (validation.isValid) {
+      await saveChatSettings(chatSettings)
+      addLog('info', 'Configurações do chat atualizadas', user?.name || 'Sistema')
+    }
+  }
+
+  const handleResetChatSettings = () => {
+    resetChatSettings()
+    setChatSettings(globalChatSettings)
+    setChatSettingsErrors([])
+    addLog('info', 'Configurações do chat restauradas para padrão', user?.name || 'Sistema')
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50/30 via-white to-blue-50/30 p-6">
       <div className="container mx-auto space-y-6">
@@ -332,7 +369,7 @@ export default function Settings() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 backdrop-blur-sm bg-white/70 border-white/20 shadow-lg">
+          <TabsList className="grid w-full grid-cols-7 backdrop-blur-sm bg-white/70 border-white/20 shadow-lg">
             <TabsTrigger 
               value="profile" 
               className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
@@ -367,6 +404,13 @@ export default function Settings() {
             >
               <Shield className="h-4 w-4" />
               Permissões
+            </TabsTrigger>
+            <TabsTrigger 
+              value="chat" 
+              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
+            >
+              <Bot className="h-4 w-4" />
+              Chat IA
             </TabsTrigger>
             <TabsTrigger 
               value="logs" 
@@ -857,6 +901,204 @@ export default function Settings() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Configurações do Chat IA */}
+        <TabsContent value="chat" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5" />
+                Configurações do Chat IA
+              </CardTitle>
+              <CardDescription>
+                Configure as configurações da inteligência artificial para o chat assistente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-6">
+                {/* Configurações da API */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    Configurações da API
+                  </h3>
+                  
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="api-key">Chave da API OpenAI</Label>
+                      <div className="relative">
+                        <Input
+                          id="api-key"
+                          type={showPassword ? 'text' : 'password'}
+                          value={chatSettings.apiKey}
+                          onChange={(e) => handleChatSettingChange('apiKey', e.target.value)}
+                          placeholder="sk-..."
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Sua chave da API OpenAI para usar o chat assistente
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="model">Modelo</Label>
+                      <Select value={chatSettings.model} onValueChange={(value) => handleChatSettingChange('model', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o modelo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                          <SelectItem value="gpt-4">GPT-4</SelectItem>
+                          <SelectItem value="gpt-4-turbo-preview">GPT-4 Turbo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Parâmetros do Modelo */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Sliders className="h-4 w-4" />
+                    Parâmetros do Modelo
+                  </h3>
+                  
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="temperature">Temperatura: {chatSettings.temperature}</Label>
+                      <input
+                        id="temperature"
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={chatSettings.temperature}
+                        onChange={(e) => handleChatSettingChange('temperature', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Controla a criatividade das respostas (0 = mais focado, 2 = mais criativo)
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="max-tokens">Máximo de Tokens</Label>
+                      <Input
+                        id="max-tokens"
+                        type="number"
+                        min="1"
+                        max="4000"
+                        value={chatSettings.maxTokens}
+                        onChange={(e) => handleChatSettingChange('maxTokens', parseInt(e.target.value))}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Número máximo de tokens na resposta
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="presence-penalty">Penalidade de Presença: {chatSettings.presencePenalty}</Label>
+                      <input
+                        id="presence-penalty"
+                        type="range"
+                        min="-2"
+                        max="2"
+                        step="0.1"
+                        value={chatSettings.presencePenalty}
+                        onChange={(e) => handleChatSettingChange('presencePenalty', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Penaliza a repetição de tópicos já mencionados
+                      </p>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="frequency-penalty">Penalidade de Frequência: {chatSettings.frequencyPenalty}</Label>
+                      <input
+                        id="frequency-penalty"
+                        type="range"
+                        min="-2"
+                        max="2"
+                        step="0.1"
+                        value={chatSettings.frequencyPenalty}
+                        onChange={(e) => handleChatSettingChange('frequencyPenalty', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Penaliza a repetição de palavras específicas
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Prompt do Sistema */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Prompt do Sistema
+                  </h3>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="system-prompt">Instruções para o Assistente</Label>
+                    <textarea
+                      id="system-prompt"
+                      value={chatSettings.systemPrompt}
+                      onChange={(e) => handleChatSettingChange('systemPrompt', e.target.value)}
+                      className="min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Digite as instruções para o assistente IA..."
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Define o comportamento e conhecimento do assistente IA
+                    </p>
+                  </div>
+                </div>
+
+                {/* Exibir erros de validação */}
+                {chatSettingsErrors.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-medium text-red-800">Erros de Configuração</h4>
+                        <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                          {chatSettingsErrors.map((error, index) => (
+                            <li key={index}>{error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botões de Ação */}
+                <div className="flex gap-2 pt-4">
+                  <Button onClick={handleSaveChatSettings}>
+                    Salvar Configurações
+                  </Button>
+                  <Button variant="outline" onClick={handleResetChatSettings}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Restaurar Padrões
+                  </Button>
                 </div>
               </div>
             </CardContent>
