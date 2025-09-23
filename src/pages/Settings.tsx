@@ -56,6 +56,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSystemLogs } from '@/hooks/useSystemLogs'
 import { useChatSettings } from '@/hooks/useChatSettings'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 interface User {
   id: string
@@ -112,6 +113,40 @@ export default function Settings() {
       createdAt: '2024-01-20'
     }
   ])
+
+  // Carregar usuários do banco de dados
+  useEffect(() => {
+    loadUsersFromDatabase()
+  }, [])
+
+  const loadUsersFromDatabase = async () => {
+    try {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Erro ao carregar usuários:', error)
+        return
+      }
+
+      if (profiles && profiles.length > 0) {
+        const formattedUsers = profiles.map(profile => ({
+          id: profile.id,
+          name: profile.full_name || 'Nome não informado',
+          email: `${profile.full_name?.toLowerCase().replace(/\s+/g, '.')}@hospital.com` || 'email@hospital.com',
+          role: (profile.role as 'admin' | 'doctor' | 'nurse') || 'nurse',
+          hospital: 'Hospital Central',
+          status: 'active' as const,
+          createdAt: new Date(profile.created_at).toISOString().split('T')[0]
+        }))
+        setUsers(formattedUsers)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error)
+    }
+  }
 
   const [hospitals, setHospitals] = useState<Hospital[]>([
     {
@@ -176,15 +211,56 @@ export default function Settings() {
     }
   }, [logs.length, addLog, user?.name])
 
-  const handleAddUser = () => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      ...userForm,
-      createdAt: new Date().toISOString().split('T')[0]
+  const handleAddUser = async () => {
+    try {
+      // Criar usuário na tabela profiles
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: crypto.randomUUID(),
+          full_name: userForm.name,
+          role: userForm.role
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Erro ao criar usuário:', error)
+        toast({
+          title: "Erro",
+          description: "Não foi possível criar o usuário. Tente novamente.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Atualizar lista local
+      const newUser: User = {
+        id: profile.id,
+        name: profile.full_name || userForm.name,
+        email: userForm.email,
+        role: userForm.role,
+        hospital: userForm.hospital,
+        status: userForm.status,
+        createdAt: new Date(profile.created_at).toISOString().split('T')[0]
+      }
+      
+      setUsers([...users, newUser])
+      setUserForm({ name: '', email: '', password: '', role: 'nurse', hospital: '', status: 'active' })
+      setIsUserDialogOpen(false)
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário criado com sucesso!",
+      })
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error)
+      toast({
+        title: "Erro",
+        description: "Erro interno. Tente novamente.",
+        variant: "destructive",
+      })
     }
-    setUsers([...users, newUser])
-    setUserForm({ name: '', email: '', password: '', role: 'nurse', hospital: '', status: 'active' })
-    setIsUserDialogOpen(false)
   }
 
   const handleEditUser = (user: User) => {
@@ -200,21 +276,86 @@ export default function Settings() {
     setIsUserDialogOpen(true)
   }
 
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (editingUser) {
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { ...user, ...userForm }
-          : user
-      ))
-      setEditingUser(null)
-      setUserForm({ name: '', email: '', password: '', role: 'nurse', hospital: '', status: 'active' })
-      setIsUserDialogOpen(false)
+      try {
+        // Atualizar usuário na tabela profiles
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: userForm.name,
+            role: userForm.role
+          })
+          .eq('id', editingUser.id)
+
+        if (error) {
+          console.error('Erro ao atualizar usuário:', error)
+          toast({
+            title: "Erro",
+            description: "Não foi possível atualizar o usuário. Tente novamente.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        // Atualizar lista local
+        setUsers(users.map(user => 
+          user.id === editingUser.id 
+            ? { ...user, ...userForm }
+            : user
+        ))
+        setEditingUser(null)
+        setUserForm({ name: '', email: '', password: '', role: 'nurse', hospital: '', status: 'active' })
+        setIsUserDialogOpen(false)
+        
+        toast({
+          title: "Sucesso",
+          description: "Usuário atualizado com sucesso!",
+        })
+      } catch (error) {
+        console.error('Erro ao atualizar usuário:', error)
+        toast({
+          title: "Erro",
+          description: "Erro interno. Tente novamente.",
+          variant: "destructive",
+        })
+      }
     }
   }
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId))
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Deletar usuário da tabela profiles
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId)
+
+      if (error) {
+        console.error('Erro ao deletar usuário:', error)
+        toast({
+          title: "Erro",
+          description: "Não foi possível deletar o usuário. Tente novamente.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Atualizar lista local
+      setUsers(users.filter(user => user.id !== userId))
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário deletado com sucesso!",
+      })
+    } catch (error) {
+      console.error('Erro ao deletar usuário:', error)
+      toast({
+        title: "Erro",
+        description: "Erro interno. Tente novamente.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleAddHospital = () => {
