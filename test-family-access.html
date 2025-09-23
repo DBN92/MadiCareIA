@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Acesso Familiar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Teste de Acesso Familiar - MediCare</h1>
+    
+    <div class="test-section">
+        <h2>1. Verificar Tokens Armazenados</h2>
+        <button class="btn-primary" onclick="checkStoredTokens()">Verificar Tokens</button>
+        <div id="tokens-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Criar Token de Teste</h2>
+        <button class="btn-success" onclick="createTestToken()">Criar Token Editor</button>
+        <button class="btn-success" onclick="createViewerToken()">Criar Token Viewer</button>
+        <div id="create-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Testar Acesso</h2>
+        <button class="btn-primary" onclick="testEditorAccess()">Testar Editor</button>
+        <button class="btn-primary" onclick="testViewerAccess()">Testar Viewer</button>
+        <div id="access-result"></div>
+    </div>
+
+    <script>
+        function checkStoredTokens() {
+            const tokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+            const result = document.getElementById('tokens-result');
+            result.innerHTML = `
+                <h3>Tokens encontrados: ${tokens.length}</h3>
+                <pre>${JSON.stringify(tokens, null, 2)}</pre>
+            `;
+        }
+        
+        function createTestToken() {
+            const tokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+            const newToken = {
+                id: 'test-id-' + Date.now(),
+                patient_id: 'test-patient-1',
+                token: 'test-token-editor',
+                username: 'familia_editor',
+                password: 'senha123',
+                role: 'editor',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            // Remove token existente se houver
+            const filteredTokens = tokens.filter(t => t.patient_id !== 'test-patient-1' || t.role !== 'editor');
+            filteredTokens.push(newToken);
+            
+            localStorage.setItem('bedside_family_tokens', JSON.stringify(filteredTokens));
+            
+            const result = document.getElementById('create-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>Token Editor Criado!</h3>
+                    <p>Patient ID: test-patient-1</p>
+                    <p>Token: test-token-editor</p>
+                    <p>Role: editor</p>
+                </div>
+            `;
+        }
+        
+        function createViewerToken() {
+            const tokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+            const newToken = {
+                id: 'test-id-viewer-' + Date.now(),
+                patient_id: 'test-patient-1',
+                token: 'test-token-viewer',
+                username: 'familia_viewer',
+                password: 'senha123',
+                role: 'viewer',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            // Remove token existente se houver
+            const filteredTokens = tokens.filter(t => t.patient_id !== 'test-patient-1' || t.role !== 'viewer');
+            filteredTokens.push(newToken);
+            
+            localStorage.setItem('bedside_family_tokens', JSON.stringify(filteredTokens));
+            
+            const result = document.getElementById('create-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>Token Viewer Criado!</h3>
+                    <p>Patient ID: test-patient-1</p>
+                    <p>Token: test-token-viewer</p>
+                    <p>Role: viewer</p>
+                </div>
+            `;
+        }
+        
+        function testEditorAccess() {
+            const url = 'http://localhost:8080/family/test-patient-1?token=test-token-editor';
+            window.open(url, '_blank');
+            
+            const result = document.getElementById('access-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>Abrindo acesso Editor...</h3>
+                    <p>URL: ${url}</p>
+                    <p>Deve permitir visualizar e registrar cuidados</p>
+                </div>
+            `;
+        }
+        
+        function testViewerAccess() {
+            const url = 'http://localhost:8080/family/test-patient-1?token=test-token-viewer';
+            window.open(url, '_blank');
+            
+            const result = document.getElementById('access-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>Abrindo acesso Viewer...</h3>
+                    <p>URL: ${url}</p>
+                    <p>Deve permitir apenas visualizar (sem registrar)</p>
+                </div>
+            `;
+        }
+        
+        // Verificar tokens ao carregar a página
+        window.onload = function() {
+            checkStoredTokens();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Debug Token - Diagnóstico e Correção</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .button.success {
+            background-color: #10b981;
+        }
+        .button.danger {
+            background-color: #ef4444;
+        }
+        .button.warning {
+            background-color: #f59e0b;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .status.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        .status.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        .status.warning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+        .status.info {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+        .token-box {
+            background-color: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+            border: 1px solid #d1d5db;
+        }
+        .url-box {
+            background-color: #f9fafb;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Token - Diagnóstico e Correção</h1>
+        <p>Ferramenta para diagnosticar e corrigir problemas com tokens que não funcionam.</p>
+        
+        <div class="status info">
+            <strong>Problemas Comuns:</strong><br>
+            • Token não encontrado no localStorage<br>
+            • Token inválido ou expirado<br>
+            • Paciente não encontrado<br>
+            • Formato de URL incorreto
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>1. 🔍 Diagnosticar Problema</h2>
+            
+            <div class="input-group">
+                <label>URL Problemática (cole aqui):</label>
+                <input type="text" id="problemUrl" placeholder="http://localhost:8080/family/patient-id/token/care">
+            </div>
+            
+            <button class="button" onclick="diagnoseUrl()">Diagnosticar URL</button>
+            <button class="button warning" onclick="checkLocalStorage()">Verificar LocalStorage</button>
+            
+            <div id="diagnosisResult"></div>
+        </div>
+
+        <div class="container">
+            <h2>2. 🛠️ Corrigir Problema</h2>
+            
+            <button class="button success" onclick="createWorkingToken()">Criar Token Funcional</button>
+            <button class="button" onclick="generateDirectAccessTokens()">Gerar Acessos Diretos Completos</button>
+            <button class="button danger" onclick="clearAllTokens()">Limpar Todos os Tokens</button>
+            <button class="button" onclick="resetTestData()">Reset Dados de Teste</button>
+            
+            <div id="fixResult"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>3. 📋 Tokens Armazenados</h2>
+        <button class="button" onclick="listAllTokens()">Listar Todos os Tokens</button>
+        <div id="tokensList"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. 🔗 Acessos Diretos do Paciente</h2>
+        <div class="input-group">
+            <label>ID do Paciente:</label>
+            <input type="text" id="patientIdInput" placeholder="Digite o ID do paciente">
+        </div>
+        <button class="button" onclick="showPatientDirectAccessFromInput()">Mostrar Acessos Diretos</button>
+        <div id="patientAccessList"></div>
+    </div>
+
+    <div class="container">
+        <h2>5. ✅ Testar Token Corrigido</h2>
+        <div id="testLinks"></div>
+    </div>
+
+    <script>
+        let currentPatientId = '';
+        let currentToken = '';
+
+        function diagnoseUrl() {
+            const url = document.getElementById('problemUrl').value;
+            const resultDiv = document.getElementById('diagnosisResult');
+            
+            if (!url) {
+                resultDiv.innerHTML = '<div class="status error">Por favor, cole a URL problemática.</div>';
+                return;
+            }
+
+            try {
+                // Extrair partes da URL
+                const urlParts = url.split('/');
+                const familyIndex = urlParts.findIndex(part => part === 'family');
+                
+                if (familyIndex === -1) {
+                    resultDiv.innerHTML = '<div class="status error">URL não é uma URL de acesso familiar válida.</div>';
+                    return;
+                }
+
+                currentPatientId = urlParts[familyIndex + 1];
+                currentToken = urlParts[familyIndex + 2];
+                const page = urlParts[familyIndex + 3] || 'dashboard';
+
+                let diagnosis = '<div class="status info">';
+                diagnosis += `<strong>Análise da URL:</strong><br>`;
+                diagnosis += `Paciente ID: ${currentPatientId}<br>`;
+                diagnosis += `Token: ${currentToken}<br>`;
+                diagnosis += `Página: ${page}<br><br>`;
+
+                // Verificar se o token existe no localStorage
+                const tokens = getStoredTokens();
+                const tokenExists = tokens.find(t => 
+                    t.patient_id === currentPatientId && 
+                    t.token === currentToken && 
+                    t.is_active
+                );
+
+                if (tokenExists) {
+                    diagnosis += '<span style="color: #10b981;">✅ Token encontrado no localStorage</span><br>';
+                    diagnosis += `Role: ${tokenExists.role}<br>`;
+                    diagnosis += `Ativo: ${tokenExists.is_active ? 'Sim' : 'Não'}<br>`;
+                } else {
+                    diagnosis += '<span style="color: #ef4444;">❌ Token NÃO encontrado no localStorage</span><br>';
+                    diagnosis += 'Este é provavelmente o problema!<br>';
+                }
+
+                diagnosis += '</div>';
+                resultDiv.innerHTML = diagnosis;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Erro ao analisar URL: ${error.message}</div>`;
+            }
+        }
+
+        function checkLocalStorage() {
+            const resultDiv = document.getElementById('diagnosisResult');
+            const tokens = getStoredTokens();
+            
+            let result = '<div class="status info">';
+            result += `<strong>LocalStorage Status:</strong><br>`;
+            result += `Total de tokens: ${tokens.length}<br><br>`;
+            
+            if (tokens.length === 0) {
+                result += '<span style="color: #ef4444;">❌ Nenhum token encontrado!</span><br>';
+                result += 'Você precisa criar tokens de teste.<br>';
+            } else {
+                result += '<span style="color: #10b981;">✅ Tokens encontrados</span><br>';
+                tokens.forEach((token, index) => {
+                    result += `${index + 1}. ${token.patient_id} (${token.role}) - ${token.is_active ? 'Ativo' : 'Inativo'}<br>`;
+                });
+            }
+            
+            result += '</div>';
+            resultDiv.innerHTML = result;
+        }
+
+        function createWorkingToken() {
+            const resultDiv = document.getElementById('fixResult');
+            
+            // Usar dados da URL diagnosticada ou criar novos
+            const patientId = currentPatientId || 'test-patient-fixed-' + Date.now();
+            const token = currentToken || 'test-token-editor-' + Date.now();
+            
+            const newToken = {
+                id: 'fixed-token-' + Date.now(),
+                patient_id: patientId,
+                token: token,
+                username: 'familia_editor',
+                password: 'senha123',
+                role: 'editor',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+
+            const tokens = getStoredTokens();
+            
+            // Remover token existente se houver
+            const filteredTokens = tokens.filter(t => 
+                !(t.patient_id === patientId && t.token === token)
+            );
+            
+            filteredTokens.push(newToken);
+            saveTokens(filteredTokens);
+
+            resultDiv.innerHTML = `
+                <div class="status success">
+                    ✅ Token de acesso direto criado e armazenado no localStorage!<br><br>
+                    <strong>Detalhes:</strong><br>
+                    Paciente: ${patientId}<br>
+                    Token: ${token}<br>
+                    Role: editor<br>
+                    Status: ativo
+                </div>
+            `;
+
+            // Gerar links de teste e mostrar acessos vinculados
+            generateTestLinks(patientId, token);
+            showPatientDirectAccess(patientId);
+        }
+
+        function clearAllTokens() {
+            if (confirm('Tem certeza que deseja limpar TODOS os tokens? Esta ação não pode ser desfeita.')) {
+                localStorage.removeItem('bedside_family_tokens');
+                document.getElementById('fixResult').innerHTML = `
+                    <div class="status warning">
+                        ⚠️ Todos os tokens foram removidos do localStorage.
+                    </div>
+                `;
+                document.getElementById('tokensList').innerHTML = '';
+                document.getElementById('testLinks').innerHTML = '';
+            }
+        }
+
+        function generateDirectAccessTokens() {
+            const patientId = currentPatientId || prompt('Digite o ID do paciente:') || 'patient-123';
+            const timestamp = Date.now();
+            
+            const directAccessTokens = [
+                {
+                    id: 'direct-editor-' + timestamp,
+                    patient_id: patientId,
+                    token: 'access-editor-' + timestamp,
+                    username: 'familia_editor',
+                    password: 'senha123',
+                    role: 'editor',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'direct-viewer-' + timestamp,
+                    patient_id: patientId,
+                    token: 'access-viewer-' + timestamp,
+                    username: 'familia_viewer',
+                    password: 'senha123',
+                    role: 'viewer',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                }
+            ];
+
+            const existingTokens = getStoredTokens();
+            
+            // Remover tokens existentes para este paciente
+            const filteredTokens = existingTokens.filter(t => t.patient_id !== patientId);
+            
+            // Adicionar novos tokens
+            const allTokens = [...filteredTokens, ...directAccessTokens];
+            saveTokens(allTokens);
+            
+            document.getElementById('fixResult').innerHTML = `
+                <div class="status success">
+                    ✅ Acessos diretos completos gerados e armazenados no localStorage!<br><br>
+                    <strong>Paciente:</strong> ${patientId}<br><br>
+                    <strong>Tokens Criados:</strong><br>
+                    • Editor: access-editor-${timestamp}<br>
+                    • Visualizador: access-viewer-${timestamp}<br><br>
+                    Todos os tokens foram automaticamente armazenados e estão prontos para uso!
+                </div>
+            `;
+
+            // Mostrar acessos diretos do paciente
+            document.getElementById('patientIdInput').value = patientId;
+            showPatientDirectAccess(patientId);
+            
+            // Gerar links de teste com o token editor
+            generateTestLinks(patientId, 'access-editor-' + timestamp);
+        }
+
+        function resetTestData() {
+            // Criar dados de teste padrão
+            const testTokens = [
+                {
+                    id: 'test-editor-' + Date.now(),
+                    patient_id: 'test-patient-debug',
+                    token: 'test-token-editor-debug',
+                    username: 'familia_editor',
+                    password: 'senha123',
+                    role: 'editor',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'test-viewer-' + Date.now(),
+                    patient_id: 'test-patient-debug',
+                    token: 'test-token-viewer-debug',
+                    username: 'familia_viewer',
+                    password: 'senha123',
+                    role: 'viewer',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                }
+            ];
+
+            saveTokens(testTokens);
+            
+            document.getElementById('fixResult').innerHTML = `
+                <div class="status success">
+                    ✅ Dados de teste resetados com sucesso!<br><br>
+                    Criados 2 tokens para o paciente 'test-patient-debug':<br>
+                    • Editor: test-token-editor-debug<br>
+                    • Visualizador: test-token-viewer-debug
+                </div>
+            `;
+
+            generateTestLinks('test-patient-debug', 'test-token-editor-debug');
+        }
+
+        function listAllTokens() {
+            const tokens = getStoredTokens();
+            const listDiv = document.getElementById('tokensList');
+            
+            if (tokens.length === 0) {
+                listDiv.innerHTML = '<div class="status warning">Nenhum token encontrado no localStorage.</div>';
+                return;
+            }
+
+            let tokensList = '<div class="status info"><strong>Tokens Armazenados:</strong></div>';
+            
+            tokens.forEach((token, index) => {
+                const statusColor = token.is_active ? '#10b981' : '#ef4444';
+                const statusText = token.is_active ? 'Ativo' : 'Inativo';
+                
+                tokensList += `
+                    <div class="token-box">
+                        <strong>Token ${index + 1}</strong><br>
+                        Paciente: ${token.patient_id}<br>
+                        Token: ${token.token}<br>
+                        Role: ${token.role}<br>
+                        Status: <span style="color: ${statusColor}">${statusText}</span><br>
+                        Criado: ${new Date(token.created_at).toLocaleString()}
+                        <br><br>
+                        <button class="button" onclick="generateTestLinks('${token.patient_id}', '${token.token}')">Gerar Links</button>
+                        <button class="button danger" onclick="deleteToken('${token.id}')">Deletar</button>
+                    </div>
+                `;
+            });
+            
+            listDiv.innerHTML = tokensList;
+        }
+
+        function deleteToken(tokenId) {
+            if (confirm('Tem certeza que deseja deletar este token?')) {
+                const tokens = getStoredTokens();
+                const filteredTokens = tokens.filter(t => t.id !== tokenId);
+                saveTokens(filteredTokens);
+                listAllTokens(); // Refresh the list
+            }
+        }
+
+        function generateTestLinks(patientId, token) {
+            const baseUrl = window.location.origin;
+            const linksDiv = document.getElementById('testLinks');
+            
+            linksDiv.innerHTML = `
+                <div class="status success">
+                    <strong>🔗 Links de Teste Gerados:</strong><br><br>
+                    
+                    <div class="url-box">
+                        <strong>Dashboard:</strong><br>
+                        <a href="${baseUrl}/family/${patientId}/${token}/dashboard" target="_blank">
+                            ${baseUrl}/family/${patientId}/${token}/dashboard
+                        </a>
+                    </div>
+                    
+                    <div class="url-box">
+                        <strong>Registro de Cuidados:</strong><br>
+                        <a href="${baseUrl}/family/${patientId}/${token}/care" target="_blank">
+                            ${baseUrl}/family/${patientId}/${token}/care
+                        </a>
+                    </div>
+                    
+                    <div class="url-box">
+                        <strong>Relatórios:</strong><br>
+                        <a href="${baseUrl}/family/${patientId}/${token}/reports" target="_blank">
+                            ${baseUrl}/family/${patientId}/${token}/reports
+                        </a>
+                    </div>
+                    
+                    <br>
+                    <button class="button success" onclick="testAllLinks('${patientId}', '${token}')">Testar Todos os Links</button>
+                </div>
+            `;
+        }
+
+        function testAllLinks(patientId, token) {
+            const baseUrl = window.location.origin;
+            const links = [
+                `${baseUrl}/family/${patientId}/${token}/dashboard`,
+                `${baseUrl}/family/${patientId}/${token}/care`,
+                `${baseUrl}/family/${patientId}/${token}/reports`
+            ];
+            
+            links.forEach((link, index) => {
+                setTimeout(() => {
+                    window.open(link, '_blank');
+                }, index * 500); // Delay para não abrir todas de uma vez
+            });
+        }
+
+        function showPatientDirectAccessFromInput() {
+            const patientId = document.getElementById('patientIdInput').value.trim();
+            if (!patientId) {
+                document.getElementById('patientAccessList').innerHTML = 
+                    '<div class="status error">Por favor, digite o ID do paciente.</div>';
+                return;
+            }
+            showPatientDirectAccess(patientId);
+        }
+
+        function showPatientDirectAccess(patientId) {
+            const tokens = getStoredTokens();
+            const patientTokens = tokens.filter(t => t.patient_id === patientId);
+            const accessDiv = document.getElementById('patientAccessList');
+            
+            if (patientTokens.length === 0) {
+                accessDiv.innerHTML = `
+                    <div class="status warning">
+                        ⚠️ Nenhum acesso direto encontrado para o paciente: ${patientId}<br>
+                        Crie um token primeiro para gerar acessos diretos.
+                    </div>
+                `;
+                return;
+            }
+
+            let accessHtml = `
+                <div class="status success">
+                    <strong>🔗 Acessos Diretos para Paciente: ${patientId}</strong><br>
+                    Total de tokens: ${patientTokens.length}
+                </div>
+            `;
+
+            patientTokens.forEach((token, index) => {
+                const baseUrl = window.location.origin;
+                const statusColor = token.is_active ? '#10b981' : '#ef4444';
+                const statusText = token.is_active ? 'Ativo' : 'Inativo';
+                
+                accessHtml += `
+                    <div class="token-box">
+                        <strong>Acesso ${index + 1} - ${token.role.toUpperCase()}</strong>
+                        <span style="color: ${statusColor}; float: right;">${statusText}</span><br><br>
+                        
+                        <strong>Informações do Token:</strong><br>
+                        Token: ${token.token}<br>
+                        Usuário: ${token.username}<br>
+                        Criado: ${new Date(token.created_at).toLocaleString()}<br><br>
+                        
+                        <strong>Links de Acesso Direto:</strong><br>
+                        
+                        <div class="url-box">
+                            <strong>Dashboard:</strong><br>
+                            <a href="${baseUrl}/family/${patientId}/${token.token}/dashboard" target="_blank">
+                                ${baseUrl}/family/${patientId}/${token.token}/dashboard
+                            </a>
+                        </div>
+                        
+                        <div class="url-box">
+                            <strong>Registro de Cuidados:</strong><br>
+                            <a href="${baseUrl}/family/${patientId}/${token.token}/care" target="_blank">
+                                ${baseUrl}/family/${patientId}/${token.token}/care
+                            </a>
+                        </div>
+                        
+                        <div class="url-box">
+                            <strong>Relatórios:</strong><br>
+                            <a href="${baseUrl}/family/${patientId}/${token.token}/reports" target="_blank">
+                                ${baseUrl}/family/${patientId}/${token.token}/reports
+                            </a>
+                        </div>
+                        
+                        <br>
+                        <button class="button success" onclick="copyAllLinks('${patientId}', '${token.token}')">Copiar Todos os Links</button>
+                        <button class="button" onclick="testAllLinks('${patientId}', '${token.token}')">Testar Links</button>
+                        ${token.is_active ? 
+                            `<button class="button warning" onclick="deactivateToken('${token.id}')">Desativar</button>` :
+                            `<button class="button success" onclick="activateToken('${token.id}')">Ativar</button>`
+                        }
+                        <button class="button danger" onclick="deleteToken('${token.id}')">Deletar</button>
+                    </div>
+                `;
+            });
+            
+            accessDiv.innerHTML = accessHtml;
+        }
+
+        function copyAllLinks(patientId, token) {
+            const baseUrl = window.location.origin;
+            const links = [
+                `Dashboard: ${baseUrl}/family/${patientId}/${token}/dashboard`,
+                `Cuidados: ${baseUrl}/family/${patientId}/${token}/care`,
+                `Relatórios: ${baseUrl}/family/${patientId}/${token}/reports`
+            ].join('\n\n');
+            
+            navigator.clipboard.writeText(links).then(() => {
+                alert('Links copiados para a área de transferência!');
+            }).catch(() => {
+                // Fallback para navegadores mais antigos
+                const textArea = document.createElement('textarea');
+                textArea.value = links;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Links copiados para a área de transferência!');
+            });
+        }
+
+        function activateToken(tokenId) {
+            const tokens = getStoredTokens();
+            const updatedTokens = tokens.map(t => 
+                t.id === tokenId ? {...t, is_active: true} : t
+            );
+            saveTokens(updatedTokens);
+            
+            // Refresh displays
+            listAllTokens();
+            const patientId = document.getElementById('patientIdInput').value.trim();
+            if (patientId) {
+                showPatientDirectAccess(patientId);
+            }
+        }
+
+        function deactivateToken(tokenId) {
+            const tokens = getStoredTokens();
+            const updatedTokens = tokens.map(t => 
+                t.id === tokenId ? {...t, is_active: false} : t
+            );
+            saveTokens(updatedTokens);
+            
+            // Refresh displays
+            listAllTokens();
+            const patientId = document.getElementById('patientIdInput').value.trim();
+            if (patientId) {
+                showPatientDirectAccess(patientId);
+            }
+        }
+
+        // Utility functions
+        function getStoredTokens() {
+            try {
+                const stored = localStorage.getItem('bedside_family_tokens');
+                return stored ? JSON.parse(stored) : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveTokens(tokens) {
+            localStorage.setItem('bedside_family_tokens', JSON.stringify(tokens));
+        }
+
+        // Auto-check localStorage on page load
+        window.onload = function() {
+            checkLocalStorage();
+            listAllTokens();
+        };
+    </script>
+</body>
+</html>

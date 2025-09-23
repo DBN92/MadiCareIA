@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Demo Login - Bedside Breeze</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .code {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Debug Demo Login</h1>
+            <p>Ferramenta de diagnóstico para problemas de acesso ao login demo</p>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Informações do Sistema</h2>
+            <div id="systemInfo"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🌐 Teste de Conectividade</h2>
+            <p>Verificar se as rotas demo estão acessíveis:</p>
+            <button onclick="testRoutes()">Testar Rotas Demo</button>
+            <div id="routeResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💾 Estado do LocalStorage</h2>
+            <p>Verificar dados salvos no navegador:</p>
+            <button onclick="checkLocalStorage()">Verificar LocalStorage</button>
+            <button onclick="clearDemoData()">Limpar Dados Demo</button>
+            <div id="storageResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Teste de Fluxo Completo</h2>
+            <p>Simular cadastro e login demo:</p>
+            <div class="step">
+                <strong>Passo 1:</strong> Cadastro Demo
+                <br><button onclick="testSignup()">Testar Cadastro</button>
+                <div id="signupResults"></div>
+            </div>
+            <div class="step">
+                <strong>Passo 2:</strong> Login Demo
+                <br><button onclick="testLogin()">Testar Login</button>
+                <div id="loginResults"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔗 Links Diretos</h2>
+            <p>Acesso direto às páginas demo:</p>
+            <button onclick="openDemoLanding()">Demo Landing</button>
+            <button onclick="openDemoSignup()">Demo Signup</button>
+            <button onclick="openDemoLogin()">Demo Login</button>
+            <button onclick="openDemoDashboard()">Demo Dashboard</button>
+        </div>
+
+        <div class="results" id="generalResults">
+            <h3>📊 Resultados Gerais</h3>
+            <p>Execute os testes acima para ver os resultados aqui.</p>
+        </div>
+    </div>
+
+    <script>
+        // Informações do sistema
+        function displaySystemInfo() {
+            const info = {
+                'Navegador': navigator.userAgent,
+                'URL Atual': window.location.href,
+                'LocalStorage Disponível': typeof(Storage) !== "undefined",
+                'JavaScript Habilitado': true,
+                'Data/Hora': new Date().toLocaleString('pt-BR')
+            };
+
+            let html = '';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<div><strong>${key}:</strong> ${value}</div>`;
+            }
+            
+            document.getElementById('systemInfo').innerHTML = html;
+        }
+
+        // Testar rotas demo
+        async function testRoutes() {
+            const routes = [
+                { path: '/demo', name: 'Demo Landing' },
+                { path: '/demo/signup', name: 'Demo Signup' },
+                { path: '/demo/login', name: 'Demo Login' },
+                { path: '/demo/dashboard', name: 'Demo Dashboard' }
+            ];
+
+            let html = '<h4>Testando rotas...</h4>';
+            document.getElementById('routeResults').innerHTML = html;
+
+            for (const route of routes) {
+                try {
+                    const response = await fetch(route.path);
+                    const status = response.ok ? 'success' : 'error';
+                    const statusText = response.ok ? `✅ OK (${response.status})` : `❌ Erro (${response.status})`;
+                    
+                    html += `<div class="${status}">${route.name}: ${statusText}</div>`;
+                } catch (error) {
+                    html += `<div class="error">${route.name}: ❌ Erro de rede - ${error.message}</div>`;
+                }
+                
+                document.getElementById('routeResults').innerHTML = html;
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+
+        // Verificar localStorage
+        function checkLocalStorage() {
+            const keys = ['demo_users', 'demo_token', 'demo_user_id', 'demo_expires_at', 'demo_days_remaining'];
+            let html = '<h4>Estado do LocalStorage:</h4>';
+
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    let displayValue = value;
+                    if (key === 'demo_users') {
+                        try {
+                            const users = JSON.parse(value);
+                            displayValue = `${users.length} usuário(s) cadastrado(s)`;
+                        } catch (e) {
+                            displayValue = 'Dados inválidos';
+                        }
+                    } else if (value.length > 50) {
+                        displayValue = value.substring(0, 50) + '...';
+                    }
+                    html += `<div class="success"><strong>${key}:</strong> ${displayValue}</div>`;
+                } else {
+                    html += `<div class="warning"><strong>${key}:</strong> Não definido</div>`;
+                }
+            });
+
+            document.getElementById('storageResults').innerHTML = html;
+        }
+
+        // Limpar dados demo
+        function clearDemoData() {
+            const keys = ['demo_users', 'demo_token', 'demo_user_id', 'demo_expires_at', 'demo_days_remaining'];
+            keys.forEach(key => localStorage.removeItem(key));
+            
+            document.getElementById('storageResults').innerHTML = 
+                '<div class="info">✅ Todos os dados demo foram limpos do localStorage</div>';
+        }
+
+        // Testar cadastro
+        function testSignup() {
+            const testEmail = `teste${Date.now()}@demo.com`;
+            const testPassword = 'senha123';
+            
+            try {
+                // Simular processo de cadastro
+                const userId = `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const demoToken = `demo_token_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`;
+                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                
+                const demoUser = {
+                    id: userId,
+                    email: testEmail,
+                    password: `hashed_${testPassword}`,
+                    demo_token: demoToken,
+                    created_at: new Date().toISOString(),
+                    expires_at: expiresAt,
+                    is_active: true,
+                    last_login: null
+                };
+                
+                // Salvar no localStorage
+                const existingUsers = JSON.parse(localStorage.getItem('demo_users') || '[]');
+                existingUsers.push(demoUser);
+                localStorage.setItem('demo_users', JSON.stringify(existingUsers));
+                
+                // Salvar dados de autenticação
+                localStorage.setItem('demo_token', demoToken);
+                localStorage.setItem('demo_user_id', userId);
+                localStorage.setItem('demo_expires_at', expiresAt);
+                localStorage.setItem('demo_days_remaining', '7');
+                
+                document.getElementById('signupResults').innerHTML = 
+                    `<div class="success">✅ Cadastro simulado com sucesso!<br>
+                     Email: ${testEmail}<br>
+                     ID: ${userId}</div>`;
+                     
+            } catch (error) {
+                document.getElementById('signupResults').innerHTML = 
+                    `<div class="error">❌ Erro no cadastro: ${error.message}</div>`;
+            }
+        }
+
+        // Testar login
+        function testLogin() {
+            try {
+                const existingUsers = JSON.parse(localStorage.getItem('demo_users') || '[]');
+                
+                if (existingUsers.length === 0) {
+                    document.getElementById('loginResults').innerHTML = 
+                        '<div class="warning">⚠️ Nenhum usuário demo encontrado. Execute o teste de cadastro primeiro.</div>';
+                    return;
+                }
+                
+                const user = existingUsers[existingUsers.length - 1]; // Pegar o último usuário
+                
+                // Verificar expiração
+                const now = new Date();
+                const expiresAt = new Date(user.expires_at);
+                
+                if (now > expiresAt) {
+                    document.getElementById('loginResults').innerHTML = 
+                        '<div class="error">❌ Conta demo expirada</div>';
+                    return;
+                }
+                
+                // Simular login bem-sucedido
+                localStorage.setItem('demo_token', user.demo_token);
+                localStorage.setItem('demo_user_id', user.id);
+                localStorage.setItem('demo_expires_at', user.expires_at);
+                
+                const daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+                localStorage.setItem('demo_days_remaining', daysRemaining.toString());
+                
+                document.getElementById('loginResults').innerHTML = 
+                    `<div class="success">✅ Login simulado com sucesso!<br>
+                     Email: ${user.email}<br>
+                     Dias restantes: ${daysRemaining}</div>`;
+                     
+            } catch (error) {
+                document.getElementById('loginResults').innerHTML = 
+                    `<div class="error">❌ Erro no login: ${error.message}</div>`;
+            }
+        }
+
+        // Links diretos
+        function openDemoLanding() { window.open('/demo', '_blank'); }
+        function openDemoSignup() { window.open('/demo/signup', '_blank'); }
+        function openDemoLogin() { window.open('/demo/login', '_blank'); }
+        function openDemoDashboard() { window.open('/demo/dashboard', '_blank'); }
+
+        // Inicializar página
+        window.onload = function() {
+            displaySystemInfo();
+            
+            // Verificar se estamos na URL correta
+            if (!window.location.href.includes('localhost:8081')) {
+                document.getElementById('generalResults').innerHTML = 
+                    '<div class="warning">⚠️ Esta página deve ser acessada através de http://localhost:8081/debug-demo-login.html</div>';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* Medical theme colors */
+    --medical-primary: 200 100% 50%;
+    --medical-secondary: 160 100% 40%;
+    --medical-accent: 220 100% 60%;
+    --medical-success: 120 100% 40%;
+    --medical-warning: 45 100% 50%;
+    --medical-error: 0 100% 50%;
+    --medical-info: 200 100% 50%;
+
+    /* Glass morphism variables */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  /* Ensure proper box-sizing and responsive behavior */
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .dark {
+    --background: 222 84% 4.9%; /* Very dark blue */
+    --foreground: 210 40% 98%; /* Very light blue-gray */
+    --card: 222 84% 4.9%; /* Very dark blue for cards */
+    --card-foreground: 210 40% 98%; /* Very light blue-gray */
+    --popover: 222 84% 4.9%; /* Very dark blue */
+    --popover-foreground: 210 40% 98%; /* Very light blue-gray */
+    
+    --primary: 217 32% 17%; /* Dark blue-gray */
+    --primary-foreground: 210 40% 98%; /* Very light blue-gray */
+    --primary-hover: 217 32% 23%; /* Slightly lighter dark blue-gray */
+    --primary-light: 217 32% 35%; /* Medium blue-gray */
+    
+    --secondary: 217 32% 17%; /* Dark blue-gray */
+    --secondary-foreground: 210 40% 98%; /* Very light blue-gray */
+    --secondary-hover: 217 32% 23%; /* Slightly lighter dark blue-gray */
+    --secondary-light: 217 32% 35%; /* Medium blue-gray */
+    
+    --accent: 217 91% 60%; /* Modern blue (same as light) */
+    --accent-foreground: 222 84% 4.9%; /* Very dark blue */
+    --accent-light: 217 91% 45%; /* Darker blue */
+    
+    --muted: 215 28% 17%; /* Dark blue-gray */
+    --muted-foreground: 217 10% 65%; /* Light gray */
+    --destructive: 0 63% 31%; /* Dark red */
+    --destructive-foreground: 210 40% 98%; /* Very light blue-gray */
+    --warning: 45 93% 35%; /* Dark amber */
+    --warning-foreground: 210 40% 98%; /* Very light blue-gray */
+    --success: 142 76% 25%; /* Dark green */
+    --success-foreground: 210 40% 98%; /* Very light blue-gray */
+    
+    --border: 215 28% 17%; /* Dark blue-gray border */
+    --input: 215 28% 17%; /* Dark blue-gray for inputs */
+    --ring: 217 91% 60%; /* Modern blue for focus */
+    
+    --glass-background: 222 84% 4.9% / 0.8; /* Semi-transparent dark */
+    --glass-border: 215 28% 17% / 0.2; /* Semi-transparent dark border */
+    
+    --chart-1: 217 91% 60%; /* Modern blue */
+    --chart-2: 142 76% 45%; /* Brighter green for dark mode */
+    --chart-3: 45 93% 55%; /* Brighter amber for dark mode */
+    --chart-4: 262 83% 68%; /* Brighter purple for dark mode */
+    --chart-5: 0 84% 70%; /* Brighter red for dark mode */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Modern typography scale */
+  h1 {
+    @apply text-4xl font-bold tracking-tight;
+  }
+  
+  h2 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+  
+  h3 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  
+  h4 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  
+  h5 {
+    @apply text-lg font-medium;
+  }
+  
+  h6 {
+    @apply text-base font-medium;
+  }
+}
+
+/* Modern animations and micro-interactions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-modern {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.15);
+  }
+  50% {
+    box-shadow: 0 0 30px hsl(var(--accent) / 0.25);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Page transition classes with improved easing */
+.page-enter {
+  animation: slideInFromRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.page-enter-alt {
+  animation: slideInFromLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.page-enter-bottom {
+  animation: slideInFromBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.card-enter {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fade-enter {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Enhanced interactive elements */
+.interactive {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.1);
+}
+
+.interactive:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+/* Modern button styles */
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  @apply transition-all duration-200 ease-out;
+  @apply shadow-sm hover:shadow-md;
+  @apply transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  @apply transition-all duration-200 ease-out;
+  @apply shadow-sm hover:shadow-md;
+  @apply transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+.btn-accent {
+  @apply bg-accent text-accent-foreground hover:bg-accent/90;
+  @apply transition-all duration-200 ease-out;
+  @apply shadow-sm hover:shadow-md;
+  @apply transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+/* Modern card styles */
+.card-modern {
+  @apply bg-card border border-border rounded-xl shadow-sm;
+  @apply transition-all duration-300 ease-out;
+  @apply hover:shadow-lg hover:-translate-y-1;
+  backdrop-filter: blur(8px);
+}
+
+.card-glass {
+  background: hsl(var(--glass-background));
+  border: 1px solid hsl(var(--glass-border));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, 
+    hsl(var(--muted)) 25%, 
+    hsl(var(--muted-foreground) / 0.1) 50%, 
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Enhanced focus states */
+.focus-modern:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.2);
+  border-color: hsl(var(--ring));
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Responsive improvements */
+@media (min-width: 1536px) {
+  .grid-responsive {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .card-modern {
+    @apply hover:shadow-sm hover:translate-y-0;
+  }
+  
+  .interactive:hover {
+    transform: none;
+  }
+}
+
+/* Utility classes for modern design */
+.text-gradient {
+  background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-gradient {
+  border: 1px solid transparent;
+  background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+              linear-gradient(135deg, hsl(var(--accent) / 0.3), hsl(var(--primary) / 0.3)) border-box;
+}
+
+.shadow-modern {
+  box-shadow: 0 4px 6px -1px hsl(var(--foreground) / 0.1), 
+              0 2px 4px -1px hsl(var(--foreground) / 0.06);
+}
+
+.shadow-modern-lg {
+  box-shadow: 0 10px 15px -3px hsl(var(--foreground) / 0.1), 
+              0 4px 6px -2px hsl(var(--foreground) / 0.05);
+}
+
+/* Remove old beige styles */
+.medical-card {
+  @apply card-modern;
+}
+
+.glass-effect {
+  @apply card-glass;
+}
+
+/* Custom scrollbar styles - Gray theme with auto-hide */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 4px;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.6);
+}
+
+/* Auto-hide scrollbar - only show on hover or scroll */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+}
+
+/* For webkit browsers - hide scrollbar by default */
+::-webkit-scrollbar-thumb {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show scrollbar on hover or when scrolling */
+*:hover::-webkit-scrollbar-thumb,
+*:focus::-webkit-scrollbar-thumb,
+.scrolling::-webkit-scrollbar-thumb {
+  opacity: 1;
+}
+
+/* Loading animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive grid improvements */
+@media (min-width: 1536px) {
+  .patients-grid {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  }
+}
+
+/* Enhanced focus states with beige theme */
+.focus-enhanced:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(184, 149, 106, 0.2);
+  border-color: #B8956A;
+}
+
+/* Smooth transitions for all interactive elements */
+button, input, select, textarea {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced card hover effects with beige theme */
+.card-hover-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 196, 168, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.card-hover-effect:hover::before {
+  left: 100%;
+}
+
+/* Beige gradient utilities */
+.gradient-beige-primary {
+  background: linear-gradient(135deg, #B8956A, #D4C4A8);
+}
+
+.gradient-beige-secondary {
+  background: linear-gradient(135deg, #E6DDD4, #F0EBE6);
+}
+
+.gradient-beige-warm {
+  background: linear-gradient(135deg, #D4C4A8, #E6DDD4);
+}

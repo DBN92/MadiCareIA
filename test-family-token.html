@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Token Familiar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffe7e7;
+            border: 1px solid #ffb3b3;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #e7ffe7;
+            border: 1px solid #b3ffb3;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teste de Token de Acesso Familiar</h1>
+        
+        <div class="info">
+            <strong>Instruções:</strong>
+            <ol>
+                <li>Clique em "Criar Token de Teste" para gerar um token válido</li>
+                <li>Clique em "Testar Acesso Direto" para abrir a URL de acesso</li>
+                <li>Verifique se há erros no console do navegador</li>
+            </ol>
+        </div>
+
+        <button class="button" onclick="createTestToken()">Criar Token de Teste</button>
+        <button class="button" onclick="testDirectAccess()">Testar Acesso Direto</button>
+        <button class="button" onclick="clearTokens()">Limpar Tokens</button>
+        <button class="button" onclick="showStoredTokens()">Mostrar Tokens Armazenados</button>
+
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        let currentTestToken = null;
+
+        function createTestToken() {
+            try {
+                // Criar um token de teste válido
+                const testToken = {
+                    id: crypto.randomUUID(),
+                    patient_id: 'test-patient-' + Date.now(),
+                    token: 'test-token-' + crypto.randomUUID(),
+                    username: 'familia_teste_' + Date.now().toString(36).slice(-4),
+                    password: 'senha' + Math.random().toString(36).slice(-6),
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+
+                // Obter tokens existentes
+                const existingTokens = getStoredTokens();
+                
+                // Adicionar o novo token
+                existingTokens.push(testToken);
+                
+                // Salvar no localStorage
+                localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(existingTokens));
+                
+                currentTestToken = testToken;
+                
+                showOutput(`
+                    <div class="success">
+                        <h3>Token de teste criado com sucesso!</h3>
+                        <pre>${JSON.stringify(testToken, null, 2)}</pre>
+                        <p><strong>URL de acesso direto:</strong></p>
+                        <p><code>http://localhost:8080/family/${testToken.patient_id}/${testToken.token}</code></p>
+                    </div>
+                `);
+            } catch (error) {
+                showOutput(`
+                    <div class="error">
+                        <h3>Erro ao criar token:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `);
+            }
+        }
+
+        function testDirectAccess() {
+            if (!currentTestToken) {
+                showOutput(`
+                    <div class="error">
+                        <p>Primeiro crie um token de teste!</p>
+                    </div>
+                `);
+                return;
+            }
+
+            const url = `http://localhost:8080/family/${currentTestToken.patient_id}/${currentTestToken.token}`;
+            
+            showOutput(`
+                <div class="info">
+                    <p>Abrindo URL de teste: <code>${url}</code></p>
+                    <p>Verifique o console do navegador para erros...</p>
+                </div>
+            `);
+            
+            // Abrir em nova aba
+            window.open(url, '_blank');
+        }
+
+        function clearTokens() {
+            localStorage.removeItem(FAMILY_TOKENS_KEY);
+            currentTestToken = null;
+            showOutput(`
+                <div class="success">
+                    <p>Todos os tokens foram removidos do localStorage.</p>
+                </div>
+            `);
+        }
+
+        function showStoredTokens() {
+            const tokens = getStoredTokens();
+            
+            if (tokens.length === 0) {
+                showOutput(`
+                    <div class="info">
+                        <p>Nenhum token encontrado no localStorage.</p>
+                    </div>
+                `);
+            } else {
+                showOutput(`
+                    <div class="info">
+                        <h3>Tokens armazenados (${tokens.length}):</h3>
+                        <pre>${JSON.stringify(tokens, null, 2)}</pre>
+                    </div>
+                `);
+            }
+        }
+
+        function getStoredTokens() {
+            try {
+                const stored = localStorage.getItem(FAMILY_TOKENS_KEY);
+                return stored ? JSON.parse(stored) : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function showOutput(html) {
+            document.getElementById('output').innerHTML = html;
+        }
+
+        // Mostrar tokens existentes ao carregar a página
+        window.onload = function() {
+            showStoredTokens();
+        };
+    </script>
+</body>
+</html>

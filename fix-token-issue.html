@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Correção do Problema de Token</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056b3; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Correção do Problema de Token</h1>
+        <p>Esta ferramenta vai diagnosticar e corrigir o problema "Token não encontrado ou inativo".</p>
+        
+        <div id="status"></div>
+        
+        <button onclick="checkTokens()">🔍 Verificar Tokens Atuais</button>
+        <button onclick="createTokens()">🚀 Criar Tokens de Teste</button>
+        <button onclick="clearTokens()" class="danger">🗑️ Limpar Todos os Tokens</button>
+        <button onclick="testAccess()">✅ Testar Acesso</button>
+        
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        function checkTokens() {
+            clearOutput();
+            log('🔍 Verificando tokens no localStorage...', 'info');
+            
+            try {
+                const stored = localStorage.getItem(FAMILY_TOKENS_KEY);
+                if (!stored) {
+                    log('❌ Nenhum token encontrado no localStorage', 'error');
+                    return;
+                }
+                
+                const tokens = JSON.parse(stored);
+                log(`✅ Encontrados ${tokens.length} tokens:`, 'success');
+                
+                tokens.forEach((token, index) => {
+                    log(`<pre>Token ${index + 1}:
+${JSON.stringify(token, null, 2)}</pre>`, 'info');
+                });
+                
+            } catch (error) {
+                log(`❌ Erro ao verificar tokens: ${error.message}`, 'error');
+            }
+        }
+        
+        function createTokens() {
+            clearOutput();
+            
+            // Verificar se há um patient ID específico na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const specificPatientId = urlParams.get('patientId');
+            
+            if (specificPatientId) {
+                log(`🚀 Criando tokens para paciente específico: ${specificPatientId}`, 'info');
+                createTokensForPatient(specificPatientId);
+            } else {
+                log('🚀 Criando tokens de teste padrão...', 'info');
+                createDefaultTestTokens();
+            }
+        }
+        
+        function createTokensForPatient(patientId) {
+            const testTokens = [
+                {
+                    id: 'token-editor-' + Date.now(),
+                    patient_id: patientId,
+                    token: 'family-token-editor-' + patientId.substring(0, 8),
+                    username: 'familia_editor',
+                    password: 'senha123',
+                    role: 'editor',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'token-viewer-' + Date.now(),
+                    patient_id: patientId,
+                    token: 'family-token-viewer-' + patientId.substring(0, 8),
+                    username: 'familia_viewer',
+                    password: 'senha123',
+                    role: 'viewer',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            saveTokensToStorage(testTokens, patientId);
+        }
+        
+        function createDefaultTestTokens() {
+            const testTokens = [
+                {
+                    id: 'test-editor-' + Date.now(),
+                    patient_id: 'test-patient-1',
+                    token: 'test-token-editor',
+                    username: 'familia_editor',
+                    password: 'senha123',
+                    role: 'editor',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'test-viewer-' + Date.now(),
+                    patient_id: 'test-patient-1',
+                    token: 'test-token-viewer',
+                    username: 'familia_viewer',
+                    password: 'senha123',
+                    role: 'viewer',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            saveTokensToStorage(testTokens, 'test-patient-1');
+        }
+        
+        function saveTokensToStorage(testTokens, patientId) {
+             try {
+                 // Obter tokens existentes
+                 const existing = localStorage.getItem(FAMILY_TOKENS_KEY);
+                 const existingTokens = existing ? JSON.parse(existing) : [];
+                 
+                 // Remover tokens antigos para este paciente
+                 const filteredTokens = existingTokens.filter(t => 
+                     t.patient_id !== patientId
+                 );
+                 
+                 // Adicionar novos tokens
+                 const allTokens = [...filteredTokens, ...testTokens];
+                 
+                 localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(allTokens));
+                 
+                 log('✅ Tokens criados com sucesso!', 'success');
+                 log(`📦 Total de tokens salvos: ${allTokens.length}`, 'info');
+                 
+                 testTokens.forEach(token => {
+                     log(`<pre>Criado: ${token.role} - ${token.token}</pre>`, 'success');
+                 });
+                 
+                 // Mostrar URLs de teste
+                 log('🔗 URLs para testar:', 'info');
+                 testTokens.forEach(token => {
+                     const url = `http://localhost:8080/family/${patientId}/${token.token}`;
+                     log(`<a href="${url}" target="_blank">${token.role}: ${url}</a>`, 'success');
+                 });
+                 
+             } catch (error) {
+                 log(`❌ Erro ao criar tokens: ${error.message}`, 'error');
+             }
+         }
+        
+        function clearTokens() {
+            if (confirm('Tem certeza que deseja limpar todos os tokens?')) {
+                clearOutput();
+                localStorage.removeItem(FAMILY_TOKENS_KEY);
+                log('🗑️ Todos os tokens foram removidos', 'info');
+            }
+        }
+        
+        function testAccess() {
+            clearOutput();
+            log('✅ Testando acesso...', 'info');
+            
+            const testUrls = [
+                'http://localhost:8080/family/test-patient-1/test-token-editor',
+                'http://localhost:8080/family/test-patient-1/test-token-viewer'
+            ];
+            
+            testUrls.forEach((url, index) => {
+                const role = index === 0 ? 'Editor' : 'Viewer';
+                log(`🔗 ${role}: <a href="${url}" target="_blank">${url}</a>`, 'info');
+            });
+            
+            log('💡 Clique nos links acima para testar o acesso', 'success');
+        }
+        
+        // Verificar tokens automaticamente ao carregar
+        window.onload = function() {
+            log('🔧 Ferramenta de correção carregada', 'success');
+            checkTokens();
+        };
+    </script>
+</body>
+</html>

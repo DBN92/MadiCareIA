@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Paciente Específico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏥 Criar Paciente Específico</h1>
+    
+    <div class="container">
+        <h2>Paciente para URL Problemática</h2>
+        <div class="info">
+            <strong>ID do Paciente:</strong> a215e412-25a9-4b89-b4a1-8dc4b11a7b01<br>
+            <strong>URL Original:</strong> http://localhost:8080/family/a215e412-25a9-4b89-b4a1-8dc4b11a7b01/care
+        </div>
+        
+        <button class="button" onclick="createSpecificPatient()">Criar Paciente</button>
+        <button class="button" onclick="createTokens()">Criar Tokens</button>
+        <button class="button" onclick="testAccess()">Testar Acesso</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>Status Atual</h2>
+        <button class="button" onclick="checkStatus()">Verificar Status</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const PATIENT_ID = 'a215e412-25a9-4b89-b4a1-8dc4b11a7b01';
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        const TEST_PATIENTS_KEY = 'test_patients';
+
+        function createSpecificPatient() {
+            const patients = JSON.parse(localStorage.getItem(TEST_PATIENTS_KEY) || '[]');
+            
+            // Verificar se já existe
+            const existingPatient = patients.find(p => p.id === PATIENT_ID);
+            if (existingPatient) {
+                document.getElementById('result').innerHTML = `
+                    <div class="info">
+                        <h4>ℹ️ Paciente já existe</h4>
+                        <pre>${JSON.stringify(existingPatient, null, 2)}</pre>
+                    </div>
+                `;
+                return;
+            }
+            
+            const newPatient = {
+                id: PATIENT_ID,
+                full_name: 'João Silva Santos',
+                birth_date: '1985-03-15',
+                bed: 'Leito 101',
+                admission_date: new Date().toISOString().split('T')[0],
+                notes: 'Paciente criado para teste de acesso familiar',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+            
+            patients.push(newPatient);
+            localStorage.setItem(TEST_PATIENTS_KEY, JSON.stringify(patients));
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">
+                    <h4>✅ Paciente criado com sucesso!</h4>
+                    <pre>${JSON.stringify(newPatient, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        function createTokens() {
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            
+            // Remover tokens antigos para este paciente
+            const filteredTokens = tokens.filter(t => t.patient_id !== PATIENT_ID);
+            
+            const editorToken = {
+                id: 'editor-' + Date.now(),
+                patient_id: PATIENT_ID,
+                token: 'family-editor-' + PATIENT_ID.substring(0, 8),
+                username: 'familia_editor',
+                password: 'senha123',
+                role: 'editor',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            const viewerToken = {
+                id: 'viewer-' + Date.now(),
+                patient_id: PATIENT_ID,
+                token: 'family-viewer-' + PATIENT_ID.substring(0, 8),
+                username: 'familia_viewer',
+                password: 'senha123',
+                role: 'viewer',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            filteredTokens.push(editorToken, viewerToken);
+            localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(filteredTokens));
+            
+            document.getElementById('result').innerHTML = `
+                <div class="success">
+                    <h4>✅ Tokens criados com sucesso!</h4>
+                    <h5>Token Editor:</h5>
+                    <pre>${JSON.stringify(editorToken, null, 2)}</pre>
+                    <h5>Token Viewer:</h5>
+                    <pre>${JSON.stringify(viewerToken, null, 2)}</pre>
+                    
+                    <h5>URLs de Teste:</h5>
+                    <p><strong>Editor (pode registrar):</strong></p>
+                    <p><code>http://localhost:8080/family/${PATIENT_ID}/${editorToken.token}/care</code></p>
+                    <p><strong>Viewer (só visualiza):</strong></p>
+                    <p><code>http://localhost:8080/family/${PATIENT_ID}/${viewerToken.token}/care</code></p>
+                </div>
+            `;
+        }
+
+        function testAccess() {
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            const patientTokens = tokens.filter(t => t.patient_id === PATIENT_ID);
+            
+            if (patientTokens.length === 0) {
+                document.getElementById('result').innerHTML = `
+                    <div class="error">
+                        <h4>❌ Nenhum token encontrado</h4>
+                        <p>Crie os tokens primeiro!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const editorToken = patientTokens.find(t => t.role === 'editor');
+            const viewerToken = patientTokens.find(t => t.role === 'viewer');
+            
+            let html = '<div class="success"><h4>🚀 Abrindo acessos...</h4>';
+            
+            if (editorToken) {
+                const editorUrl = `http://localhost:8080/family/${PATIENT_ID}/${editorToken.token}/care`;
+                window.open(editorUrl, '_blank');
+                html += `<p>✅ Editor: ${editorUrl}</p>`;
+            }
+            
+            if (viewerToken) {
+                const viewerUrl = `http://localhost:8080/family/${PATIENT_ID}/${viewerToken.token}/care`;
+                setTimeout(() => window.open(viewerUrl, '_blank'), 1000);
+                html += `<p>👁️ Viewer: ${viewerUrl}</p>`;
+            }
+            
+            html += '</div>';
+            document.getElementById('result').innerHTML = html;
+        }
+
+        function checkStatus() {
+            const patients = JSON.parse(localStorage.getItem(TEST_PATIENTS_KEY) || '[]');
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            
+            const specificPatient = patients.find(p => p.id === PATIENT_ID);
+            const patientTokens = tokens.filter(t => t.patient_id === PATIENT_ID);
+            
+            let html = '<h4>📊 Status do Sistema</h4>';
+            
+            if (specificPatient) {
+                html += '<div class="success">✅ Paciente existe</div>';
+            } else {
+                html += '<div class="error">❌ Paciente não encontrado</div>';
+            }
+            
+            if (patientTokens.length > 0) {
+                html += `<div class="success">✅ ${patientTokens.length} token(s) encontrado(s)</div>`;
+                patientTokens.forEach(token => {
+                    html += `<p>• ${token.role}: ${token.token}</p>`;
+                });
+            } else {
+                html += '<div class="error">❌ Nenhum token encontrado</div>';
+            }
+            
+            html += `<p><strong>Total de pacientes:</strong> ${patients.length}</p>`;
+            html += `<p><strong>Total de tokens:</strong> ${tokens.length}</p>`;
+            
+            document.getElementById('status').innerHTML = html;
+        }
+
+        // Verificar status ao carregar
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

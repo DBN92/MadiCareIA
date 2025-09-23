@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrigir Token do Paciente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .url-box {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Corrigir Token do Paciente</h1>
+    
+    <div class="container">
+        <h2>Problema Identificado</h2>
+        <div class="error">
+            <strong>URL problemática:</strong><br>
+            <code>http://localhost:8080/family/a215e412-25a9-4b89-b4a1-8dc4b11a7b01/care</code>
+        </div>
+        <div class="info">
+            <strong>Problemas:</strong>
+            <ul>
+                <li>A URL tem "/care" no final, mas as rotas esperam apenas "/family/:patientId/:token"</li>
+                <li>Pode não existir um token válido para este paciente</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>1. Verificar Tokens Existentes</h2>
+        <button class="button" onclick="checkExistingTokens()">Verificar Tokens</button>
+        <div id="tokens-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Criar Token para o Paciente</h2>
+        <p>Paciente ID: <strong>a215e412-25a9-4b89-b4a1-8dc4b11a7b01</strong></p>
+        <button class="button" onclick="createTokenForPatient()">Criar Token Editor</button>
+        <button class="button" onclick="createViewerTokenForPatient()">Criar Token Viewer</button>
+        <div id="create-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. URLs Corretas para Acesso</h2>
+        <div id="correct-urls"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Testar Acesso</h2>
+        <button class="button" onclick="testEditorAccess()">Testar Editor</button>
+        <button class="button" onclick="testViewerAccess()">Testar Viewer</button>
+        <div id="test-result"></div>
+    </div>
+
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        const PATIENT_ID = 'a215e412-25a9-4b89-b4a1-8dc4b11a7b01';
+        let editorToken = null;
+        let viewerToken = null;
+
+        function checkExistingTokens() {
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            const patientTokens = tokens.filter(t => t.patient_id === PATIENT_ID);
+            
+            const result = document.getElementById('tokens-result');
+            
+            if (patientTokens.length === 0) {
+                result.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Nenhum token encontrado para este paciente</h4>
+                        <p>Total de tokens no sistema: ${tokens.length}</p>
+                    </div>
+                `;
+            } else {
+                result.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Tokens encontrados: ${patientTokens.length}</h4>
+                        <pre>${JSON.stringify(patientTokens, null, 2)}</pre>
+                    </div>
+                `;
+                
+                // Salvar tokens encontrados para uso posterior
+                patientTokens.forEach(token => {
+                    if (token.role === 'editor') editorToken = token.token;
+                    if (token.role === 'viewer') viewerToken = token.token;
+                });
+                
+                updateCorrectUrls();
+            }
+        }
+
+        function createTokenForPatient() {
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            
+            // Remover tokens antigos para este paciente com role editor
+            const filteredTokens = tokens.filter(t => 
+                !(t.patient_id === PATIENT_ID && t.role === 'editor')
+            );
+            
+            const newToken = {
+                id: 'token-editor-' + Date.now(),
+                patient_id: PATIENT_ID,
+                token: 'family-token-editor-' + PATIENT_ID.substring(0, 8),
+                username: 'familia_editor_' + PATIENT_ID.substring(0, 6),
+                password: 'senha123',
+                role: 'editor',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            filteredTokens.push(newToken);
+            localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(filteredTokens));
+            
+            editorToken = newToken.token;
+            
+            const result = document.getElementById('create-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h4>✅ Token Editor criado com sucesso!</h4>
+                    <p><strong>Token:</strong> ${newToken.token}</p>
+                    <p><strong>Usuário:</strong> ${newToken.username}</p>
+                    <p><strong>Senha:</strong> ${newToken.password}</p>
+                    <p><strong>Role:</strong> ${newToken.role}</p>
+                </div>
+            `;
+            
+            updateCorrectUrls();
+        }
+
+        function createViewerTokenForPatient() {
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            
+            // Remover tokens antigos para este paciente com role viewer
+            const filteredTokens = tokens.filter(t => 
+                !(t.patient_id === PATIENT_ID && t.role === 'viewer')
+            );
+            
+            const newToken = {
+                id: 'token-viewer-' + Date.now(),
+                patient_id: PATIENT_ID,
+                token: 'family-token-viewer-' + PATIENT_ID.substring(0, 8),
+                username: 'familia_viewer_' + PATIENT_ID.substring(0, 6),
+                password: 'senha123',
+                role: 'viewer',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            filteredTokens.push(newToken);
+            localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(filteredTokens));
+            
+            viewerToken = newToken.token;
+            
+            const result = document.getElementById('create-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h4>✅ Token Viewer criado com sucesso!</h4>
+                    <p><strong>Token:</strong> ${newToken.token}</p>
+                    <p><strong>Usuário:</strong> ${newToken.username}</p>
+                    <p><strong>Senha:</strong> ${newToken.password}</p>
+                    <p><strong>Role:</strong> ${newToken.role}</p>
+                </div>
+            `;
+            
+            updateCorrectUrls();
+        }
+
+        function updateCorrectUrls() {
+            const result = document.getElementById('correct-urls');
+            let html = '<h4>URLs Corretas:</h4>';
+            
+            if (editorToken) {
+                html += `
+                    <div class="success">
+                        <strong>Editor (pode registrar cuidados):</strong><br>
+                        <div class="url-box">http://localhost:8080/family/${PATIENT_ID}/${editorToken}</div>
+                        <div class="url-box">http://localhost:8080/family/${PATIENT_ID}/${editorToken}?view=care</div>
+                        <div class="url-box">http://localhost:8080/family/${PATIENT_ID}/${editorToken}?view=reports</div>
+                    </div>
+                `;
+            }
+            
+            if (viewerToken) {
+                html += `
+                    <div class="info">
+                        <strong>Viewer (apenas visualização):</strong><br>
+                        <div class="url-box">http://localhost:8080/family/${PATIENT_ID}/${viewerToken}</div>
+                        <div class="url-box">http://localhost:8080/family/${PATIENT_ID}/${viewerToken}?view=care</div>
+                        <div class="url-box">http://localhost:8080/family/${PATIENT_ID}/${viewerToken}?view=reports</div>
+                    </div>
+                `;
+            }
+            
+            if (!editorToken && !viewerToken) {
+                html += '<div class="error">Crie um token primeiro para ver as URLs corretas.</div>';
+            }
+            
+            result.innerHTML = html;
+        }
+
+        function testEditorAccess() {
+            if (!editorToken) {
+                document.getElementById('test-result').innerHTML = 
+                    '<div class="error">Crie um token Editor primeiro!</div>';
+                return;
+            }
+            
+            const url = `http://localhost:8080/family/${PATIENT_ID}/${editorToken}?view=care`;
+            window.open(url, '_blank');
+            
+            document.getElementById('test-result').innerHTML = `
+                <div class="success">
+                    <h4>🚀 Abrindo acesso Editor...</h4>
+                    <p>URL: ${url}</p>
+                    <p>Deve permitir visualizar e registrar cuidados</p>
+                </div>
+            `;
+        }
+
+        function testViewerAccess() {
+            if (!viewerToken) {
+                document.getElementById('test-result').innerHTML = 
+                    '<div class="error">Crie um token Viewer primeiro!</div>';
+                return;
+            }
+            
+            const url = `http://localhost:8080/family/${PATIENT_ID}/${viewerToken}?view=care`;
+            window.open(url, '_blank');
+            
+            
+            document.getElementById('test-result').innerHTML = `
+                <div class="info">
+                    <h4>👁️ Abrindo acesso Viewer...</h4>
+                    <p>URL: ${url}</p>
+                    <p>Deve permitir apenas visualizar (sem registrar)</p>
+                </div>
+            `;
+        }
+
+        // Verificar tokens ao carregar a página
+        window.onload = function() {
+            checkExistingTokens();
+        };
+    </script>
+</body>
+</html>

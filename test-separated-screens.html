@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste das Telas Separadas - Acesso Familiar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .success {
+            background-color: #10b981;
+        }
+        .warning {
+            background-color: #f59e0b;
+        }
+        .info {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .url-box {
+            background-color: #f3f4f6;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .status.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste das Telas Separadas - Acesso Familiar</h1>
+        <p>Esta ferramenta testa as novas telas separadas de registro e relatórios.</p>
+        
+        <div class="info">
+            <strong>Funcionalidades testadas:</strong><br>
+            ✅ Tela de Registro de Cuidados (/care)<br>
+            ✅ Tela de Relatórios (/reports)<br>
+            ✅ Navegação entre telas<br>
+            ✅ Controle de permissões
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>1. Criar Paciente e Tokens de Teste</h2>
+        <button class="button" onclick="createTestPatientAndTokens()">Criar Paciente de Teste</button>
+        <div id="patientStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. URLs de Teste Geradas</h2>
+        <div id="testUrls"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. Testar Acesso às Telas</h2>
+        <button class="button success" onclick="testCareScreen()">Testar Tela de Registro</button>
+        <button class="button warning" onclick="testReportsScreen()">Testar Tela de Relatórios</button>
+        <button class="button" onclick="testDashboard()">Testar Dashboard</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Verificar Tokens Salvos</h2>
+        <button class="button" onclick="checkStoredTokens()">Verificar Tokens no LocalStorage</button>
+        <div id="tokenStatus"></div>
+    </div>
+
+    <script>
+        const TEST_PATIENT_ID = 'test-patient-separated-screens';
+        let editorToken = '';
+        let viewerToken = '';
+
+        function createTestPatientAndTokens() {
+            const statusDiv = document.getElementById('patientStatus');
+            statusDiv.innerHTML = '<div class="status">Criando paciente e tokens de teste...</div>';
+
+            // Gerar tokens únicos
+            editorToken = `test-token-editor-${Date.now()}`;
+            viewerToken = `test-token-viewer-${Date.now()}`;
+
+            // Criar tokens no localStorage
+            const tokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+            
+            const editorTokenData = {
+                id: 'test-editor-' + Date.now(),
+                patient_id: TEST_PATIENT_ID,
+                token: editorToken,
+                username: 'familia_editor',
+                password: 'senha123',
+                role: 'editor',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+
+            const viewerTokenData = {
+                id: 'test-viewer-' + Date.now(),
+                patient_id: TEST_PATIENT_ID,
+                token: viewerToken,
+                username: 'familia_viewer',
+                password: 'senha123',
+                role: 'viewer',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+
+            tokens.push(editorTokenData, viewerTokenData);
+            localStorage.setItem('bedside_family_tokens', JSON.stringify(tokens));
+
+            statusDiv.innerHTML = `
+                <div class="status success">
+                    ✅ Paciente e tokens criados com sucesso!<br>
+                    <strong>Paciente ID:</strong> ${TEST_PATIENT_ID}<br>
+                    <strong>Token Editor:</strong> ${editorToken}<br>
+                    <strong>Token Visualizador:</strong> ${viewerToken}
+                </div>
+            `;
+
+            generateTestUrls();
+        }
+
+        function generateTestUrls() {
+            const urlsDiv = document.getElementById('testUrls');
+            const baseUrl = window.location.origin;
+
+            urlsDiv.innerHTML = `
+                <h3>URLs para Teste (Editor - pode registrar cuidados):</h3>
+                <div class="url-box">${baseUrl}/family/${TEST_PATIENT_ID}/${editorToken}/dashboard</div>
+                <div class="url-box">${baseUrl}/family/${TEST_PATIENT_ID}/${editorToken}/care</div>
+                <div class="url-box">${baseUrl}/family/${TEST_PATIENT_ID}/${editorToken}/reports</div>
+                
+                <h3>URLs para Teste (Visualizador - apenas visualiza):</h3>
+                <div class="url-box">${baseUrl}/family/${TEST_PATIENT_ID}/${viewerToken}/dashboard</div>
+                <div class="url-box">${baseUrl}/family/${TEST_PATIENT_ID}/${viewerToken}/care</div>
+                <div class="url-box">${baseUrl}/family/${TEST_PATIENT_ID}/${viewerToken}/reports</div>
+            `;
+        }
+
+        function testCareScreen() {
+            if (!editorToken) {
+                alert('Primeiro crie o paciente e tokens de teste!');
+                return;
+            }
+            const url = `/family/${TEST_PATIENT_ID}/${editorToken}/care`;
+            window.open(url, '_blank');
+            updateTestResults('Tela de Registro', 'Aberta em nova aba (Editor)');
+        }
+
+        function testReportsScreen() {
+            if (!editorToken) {
+                alert('Primeiro crie o paciente e tokens de teste!');
+                return;
+            }
+            const url = `/family/${TEST_PATIENT_ID}/${editorToken}/reports`;
+            window.open(url, '_blank');
+            updateTestResults('Tela de Relatórios', 'Aberta em nova aba (Editor)');
+        }
+
+        function testDashboard() {
+            if (!editorToken) {
+                alert('Primeiro crie o paciente e tokens de teste!');
+                return;
+            }
+            const url = `/family/${TEST_PATIENT_ID}/${editorToken}/dashboard`;
+            window.open(url, '_blank');
+            updateTestResults('Dashboard', 'Aberto em nova aba (Editor)');
+        }
+
+        function updateTestResults(screen, status) {
+            const resultsDiv = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            resultsDiv.innerHTML += `
+                <div class="status success">
+                    [${timestamp}] <strong>${screen}:</strong> ${status}
+                </div>
+            `;
+        }
+
+        function checkStoredTokens() {
+            const statusDiv = document.getElementById('tokenStatus');
+            const tokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+            
+            if (tokens.length === 0) {
+                statusDiv.innerHTML = '<div class="status error">Nenhum token encontrado no localStorage</div>';
+                return;
+            }
+
+            let tokenList = '<div class="status success">Tokens encontrados:</div>';
+            tokens.forEach((token, index) => {
+                tokenList += `
+                    <div class="info">
+                        <strong>Token ${index + 1}:</strong><br>
+                        Paciente: ${token.patient_id}<br>
+                        Role: ${token.role}<br>
+                        Ativo: ${token.is_active ? 'Sim' : 'Não'}<br>
+                        Token: ${token.token.substring(0, 20)}...
+                    </div>
+                `;
+            });
+
+            statusDiv.innerHTML = tokenList;
+        }
+
+        // Verificar tokens ao carregar a página
+        window.onload = function() {
+            checkStoredTokens();
+        };
+    </script>
+</body>
+</html>

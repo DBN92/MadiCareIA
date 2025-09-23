@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Criação de Paciente e Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste - Criação de Paciente e Token Familiar</h1>
+    
+    <div class="container">
+        <h2>1. Criar Paciente de Teste</h2>
+        <div class="form-group">
+            <label for="patient-name">Nome Completo:</label>
+            <input type="text" id="patient-name" value="João da Silva Teste" placeholder="Nome do paciente">
+        </div>
+        <div class="form-group">
+            <label for="patient-birth">Data de Nascimento:</label>
+            <input type="date" id="patient-birth" value="1980-01-01">
+        </div>
+        <div class="form-group">
+            <label for="patient-bed">Leito:</label>
+            <input type="text" id="patient-bed" value="Leito 301" placeholder="Número do leito">
+        </div>
+        <div class="form-group">
+            <label for="patient-notes">Observações:</label>
+            <textarea id="patient-notes" rows="3" placeholder="Observações sobre o paciente">Paciente de teste para verificar geração de tokens familiares</textarea>
+        </div>
+        <button class="button" onclick="createTestPatient()">Criar Paciente</button>
+        <div id="patient-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Gerar Token Familiar</h2>
+        <p>Após criar o paciente, use o ID gerado para criar um token familiar:</p>
+        <button class="button" onclick="generateFamilyToken()" id="generate-token-btn" disabled>Gerar Token Familiar</button>
+        <div id="token-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. Testar Validação</h2>
+        <p>Teste se o token gerado funciona corretamente:</p>
+        <button class="button" onclick="testTokenValidation()" id="test-token-btn" disabled>Testar Validação do Token</button>
+        <div id="validation-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Verificar Tokens Existentes</h2>
+        <button class="button" onclick="checkExistingTokens()">Verificar Tokens no localStorage</button>
+        <button class="button" onclick="clearAllTokens()">Limpar Todos os Tokens</button>
+        <div id="tokens-list"></div>
+    </div>
+
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        let currentPatientId = null;
+        let currentToken = null;
+
+        // Simular a criação de um paciente (como seria feito no Supabase)
+        function createTestPatient() {
+            const resultDiv = document.getElementById('patient-result');
+            const name = document.getElementById('patient-name').value;
+            const birthDate = document.getElementById('patient-birth').value;
+            const bed = document.getElementById('patient-bed').value;
+            const notes = document.getElementById('patient-notes').value;
+
+            if (!name || !birthDate || !bed) {
+                resultDiv.innerHTML = '<div class="error">Preencha todos os campos obrigatórios!</div>';
+                return;
+            }
+
+            try {
+                // Simular ID gerado pelo Supabase (UUID)
+                currentPatientId = crypto.randomUUID();
+                
+                const testPatient = {
+                    id: currentPatientId,
+                    full_name: name,
+                    birth_date: birthDate,
+                    bed: bed,
+                    notes: notes,
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Paciente criado com sucesso!</h4>
+                        <pre>${JSON.stringify(testPatient, null, 2)}</pre>
+                        <p><strong>ID gerado:</strong> <code>${currentPatientId}</code></p>
+                    </div>
+                `;
+
+                // Habilitar botão de gerar token
+                document.getElementById('generate-token-btn').disabled = false;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erro ao criar paciente: ${error.message}</div>`;
+            }
+        }
+
+        // Gerar token familiar para o paciente criado
+        function generateFamilyToken() {
+            const resultDiv = document.getElementById('token-result');
+            
+            if (!currentPatientId) {
+                resultDiv.innerHTML = '<div class="error">Primeiro crie um paciente!</div>';
+                return;
+            }
+
+            try {
+                // Simular geração de token (baseado na função real do sistema)
+                currentToken = crypto.randomUUID() + '-' + Date.now().toString(36);
+                const username = `familia_${currentPatientId.slice(-6)}_${Date.now().toString(36).slice(-4)}`;
+                const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+                
+                const familyToken = {
+                    id: crypto.randomUUID(),
+                    patient_id: currentPatientId,
+                    token: currentToken,
+                    username: username,
+                    password: password,
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+
+                // Salvar no localStorage
+                const existingTokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                existingTokens.push(familyToken);
+                localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(existingTokens));
+
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Token familiar gerado com sucesso!</h4>
+                        <div class="info">
+                            <strong>Credenciais de Acesso:</strong><br>
+                            <strong>Usuário:</strong> ${username}<br>
+                            <strong>Senha:</strong> ${password}<br>
+                            <strong>Token:</strong> ${currentToken}<br>
+                            <strong>Paciente ID:</strong> ${currentPatientId}
+                        </div>
+                        <p><strong>URL de Acesso Direto:</strong></p>
+                        <p><code>http://localhost:8080/family/${currentPatientId}/${currentToken}</code></p>
+                    </div>
+                `;
+
+                // Habilitar botão de teste
+                document.getElementById('test-token-btn').disabled = false;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erro ao gerar token: ${error.message}</div>`;
+            }
+        }
+
+        // Testar validação do token
+        function testTokenValidation() {
+            const resultDiv = document.getElementById('validation-result');
+            
+            if (!currentPatientId || !currentToken) {
+                resultDiv.innerHTML = '<div class="error">Primeiro crie um paciente e gere um token!</div>';
+                return;
+            }
+
+            try {
+                // Verificar se o token existe no localStorage
+                const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                const tokenData = tokens.find(t => 
+                    t.patient_id === currentPatientId && 
+                    t.token === currentToken && 
+                    t.is_active
+                );
+
+                if (tokenData) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Token válido encontrado!</h4>
+                            <p>O token foi encontrado no localStorage e está ativo.</p>
+                            <p><strong>Teste de acesso:</strong> <a href="http://localhost:8080/family/${currentPatientId}/${currentToken}" target="_blank">Abrir Dashboard Familiar</a></p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Token não encontrado!</h4>
+                            <p>O token não foi encontrado no localStorage ou está inativo.</p>
+                            <p><strong>Procurando por:</strong></p>
+                            <p>Patient ID: ${currentPatientId}</p>
+                            <p>Token: ${currentToken}</p>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erro ao validar token: ${error.message}</div>`;
+            }
+        }
+
+        // Verificar tokens existentes
+        function checkExistingTokens() {
+            const resultDiv = document.getElementById('tokens-list');
+            
+            try {
+                const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                
+                if (tokens.length === 0) {
+                    resultDiv.innerHTML = '<div class="info">Nenhum token encontrado no localStorage.</div>';
+                    return;
+                }
+
+                let html = '<div class="info"><h4>Tokens no localStorage:</h4>';
+                tokens.forEach((token, index) => {
+                    html += `
+                        <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px;">
+                            <strong>Token ${index + 1}:</strong><br>
+                            <strong>Paciente ID:</strong> ${token.patient_id}<br>
+                            <strong>Usuário:</strong> ${token.username}<br>
+                            <strong>Ativo:</strong> ${token.is_active ? '✅ Sim' : '❌ Não'}<br>
+                            <strong>Criado em:</strong> ${new Date(token.created_at).toLocaleString()}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                resultDiv.innerHTML = html;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Erro ao verificar tokens: ${error.message}</div>`;
+            }
+        }
+
+        // Limpar todos os tokens
+        function clearAllTokens() {
+            localStorage.removeItem(FAMILY_TOKENS_KEY);
+            document.getElementById('tokens-list').innerHTML = '<div class="success">Todos os tokens foram removidos do localStorage.</div>';
+            
+            // Resetar estado
+            currentPatientId = null;
+            currentToken = null;
+            document.getElementById('generate-token-btn').disabled = true;
+            document.getElementById('test-token-btn').disabled = true;
+        }
+
+        // Verificar tokens ao carregar a página
+        window.onload = function() {
+            checkExistingTokens();
+        };
+    </script>
+</body>
+</html>

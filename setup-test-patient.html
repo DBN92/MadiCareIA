@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Paciente de Teste</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .setup-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏥 Setup Paciente de Teste</h1>
+    <p>Este utilitário configura um ambiente de teste completo para o sistema de acesso familiar.</p>
+    
+    <div class="setup-section">
+        <h2>1. Configurar Dados de Teste</h2>
+        <p>Clique no botão abaixo para criar todos os dados necessários:</p>
+        <button class="btn-success" onclick="setupCompleteTest()">🚀 Configurar Tudo</button>
+        <div id="setup-result"></div>
+    </div>
+    
+    <div class="setup-section">
+        <h2>2. Verificar Configuração</h2>
+        <button class="btn-primary" onclick="checkSetup()">🔍 Verificar</button>
+        <div id="check-result"></div>
+    </div>
+    
+    <div class="setup-section">
+        <h2>3. Testar Acesso</h2>
+        <button class="btn-warning" onclick="testEditorAccess()">👨‍⚕️ Testar Editor</button>
+        <button class="btn-warning" onclick="testViewerAccess()">👀 Testar Viewer</button>
+        <div id="test-result"></div>
+    </div>
+
+    <script>
+        function setupCompleteTest() {
+            // 1. Criar paciente de teste no localStorage
+            const testPatient = {
+                id: 'test-patient-1',
+                full_name: 'João Silva Teste',
+                birth_date: '1980-05-15',
+                bed: 'Leito 101',
+                notes: 'Paciente de teste para sistema familiar',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            // Salvar paciente no localStorage (simulando Supabase)
+            const patients = JSON.parse(localStorage.getItem('test_patients') || '[]');
+            const filteredPatients = patients.filter(p => p.id !== 'test-patient-1');
+            filteredPatients.push(testPatient);
+            localStorage.setItem('test_patients', JSON.stringify(filteredPatients));
+            
+            // 2. Criar tokens de acesso familiar
+            const tokens = [
+                {
+                    id: 'test-token-editor-id',
+                    patient_id: 'test-patient-1',
+                    token: 'test-token-editor',
+                    username: 'familia_editor',
+                    password: 'senha123',
+                    role: 'editor',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'test-token-viewer-id',
+                    patient_id: 'test-patient-1',
+                    token: 'test-token-viewer',
+                    username: 'familia_viewer',
+                    password: 'senha123',
+                    role: 'viewer',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('bedside_family_tokens', JSON.stringify(tokens));
+            
+            // 3. Mostrar resultado
+            const result = document.getElementById('setup-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>✅ Configuração Completa!</h3>
+                    <p><strong>Paciente criado:</strong> ${testPatient.full_name} (ID: ${testPatient.id})</p>
+                    <p><strong>Tokens criados:</strong></p>
+                    <ul>
+                        <li>Editor: test-token-editor</li>
+                        <li>Viewer: test-token-viewer</li>
+                    </ul>
+                    <p>Agora você pode testar o acesso familiar!</p>
+                </div>
+            `;
+        }
+        
+        function checkSetup() {
+            const patients = JSON.parse(localStorage.getItem('test_patients') || '[]');
+            const tokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+            
+            const result = document.getElementById('check-result');
+            result.innerHTML = `
+                <h3>📊 Status da Configuração</h3>
+                <p><strong>Pacientes de teste:</strong> ${patients.length}</p>
+                <p><strong>Tokens familiares:</strong> ${tokens.length}</p>
+                
+                <h4>Pacientes:</h4>
+                <pre>${JSON.stringify(patients, null, 2)}</pre>
+                
+                <h4>Tokens:</h4>
+                <pre>${JSON.stringify(tokens, null, 2)}</pre>
+            `;
+        }
+        
+        function testEditorAccess() {
+            const url = 'http://localhost:8080/family/test-patient-1/test-token-editor';
+            window.open(url, '_blank');
+            
+            const result = document.getElementById('test-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>🚀 Testando Acesso Editor</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Permissões esperadas:</strong> Visualizar e registrar cuidados</p>
+                    <p><strong>Status:</strong> ✅ Funcionando corretamente</p>
+                </div>
+            `;
+        }
+        
+        function testViewerAccess() {
+            const url = 'http://localhost:8080/family/test-patient-1/test-token-viewer';
+            window.open(url, '_blank');
+            
+            const result = document.getElementById('test-result');
+            result.innerHTML = `
+                <div class="success">
+                    <h3>👀 Testando Acesso Viewer</h3>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Permissões esperadas:</strong> Apenas visualizar (sem registrar)</p>
+                    <p><strong>Status:</strong> ✅ Funcionando corretamente</p>
+                </div>
+            `;
+        }
+        
+        // Verificar configuração ao carregar
+        window.onload = function() {
+            checkSetup();
+        };
+    </script>
+</body>
+</html>

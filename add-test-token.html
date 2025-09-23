@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Adicionar Token de Teste</title>
+</head>
+<body>
+    <h1>Adicionando Token de Teste...</h1>
+    <div id="result"></div>
+    
+    <script>
+        // Limpar tokens existentes primeiro
+        localStorage.removeItem('bedside_family_tokens');
+        
+        // Criar token de teste
+        const testToken = {
+            id: 'test-id-123',
+            patient_id: 'test-patient-1',
+            token: 'test-token-123',
+            username: 'familia_teste',
+            password: 'senha123',
+            is_active: true,
+            created_at: new Date().toISOString()
+        };
+        
+        // Adicionar ao localStorage
+        const tokens = [testToken];
+        localStorage.setItem('bedside_family_tokens', JSON.stringify(tokens));
+        
+        // Verificar se foi salvo corretamente
+        const savedTokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+        
+        // Mostrar resultado
+        document.getElementById('result').innerHTML = `
+            <p>✅ Token adicionado com sucesso!</p>
+            <p><strong>Tokens salvos:</strong> ${savedTokens.length}</p>
+            <p><strong>Patient ID:</strong> ${testToken.patient_id}</p>
+            <p><strong>Token:</strong> ${testToken.token}</p>
+            <p><strong>URL de teste:</strong> <a href="http://localhost:8080/family/${testToken.patient_id}/${testToken.token}" target="_blank">http://localhost:8080/family/${testToken.patient_id}/${testToken.token}</a></p>
+            <br>
+            <button onclick="testAccess()">Testar Acesso Direto</button>
+            <button onclick="checkLocalStorage()">Verificar localStorage</button>
+            <br><br>
+            <div id="debug"></div>
+        `;
+        
+        function testAccess() {
+            window.open('http://localhost:8080/family/test-patient-1/test-token-123', '_blank');
+        }
+        
+        function checkLocalStorage() {
+            const tokens = localStorage.getItem('bedside_family_tokens');
+            document.getElementById('debug').innerHTML = `
+                <h3>Debug localStorage:</h3>
+                <pre>${tokens || 'Nenhum token encontrado'}</pre>
+            `;
+        }
+        
+        console.log('Token adicionado:', testToken);
+        console.log('Tokens salvos:', savedTokens);
+    </script>
+</body>
+</html>

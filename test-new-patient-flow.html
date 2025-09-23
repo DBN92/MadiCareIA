@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Fluxo Completo de Novo Paciente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.success {
+            background: #28a745;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .step {
+            border-left: 4px solid #007bff;
+            padding-left: 15px;
+            margin: 20px 0;
+        }
+        .step.completed {
+            border-left-color: #28a745;
+        }
+        .step.error {
+            border-left-color: #dc3545;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste - Fluxo Completo de Novo Paciente</h1>
+    
+    <div class="info">
+        <strong>Objetivo:</strong> Verificar se quando um novo paciente é criado, o token familiar é gerado automaticamente e funciona corretamente.
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>1. Simular Criação de Paciente</h2>
+            <p>Este teste simula o que acontece quando um paciente é criado através da interface:</p>
+            <button class="button" onclick="simulatePatientCreation()">Simular Criação de Paciente</button>
+            <div id="creation-result"></div>
+        </div>
+
+        <div class="container">
+            <h2>2. Verificar Token Automático</h2>
+            <p>Verificar se o token foi gerado automaticamente:</p>
+            <button class="button" onclick="checkAutoToken()" id="check-token-btn" disabled>Verificar Token Gerado</button>
+            <div id="token-check-result"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>3. Testar Acesso Familiar</h2>
+        <p>Testar se o token gerado automaticamente permite acesso ao dashboard familiar:</p>
+        <button class="button" onclick="testFamilyAccess()" id="test-access-btn" disabled>Testar Acesso Familiar</button>
+        <div id="access-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Diagnóstico Completo</h2>
+        <button class="button" onclick="runFullDiagnostic()">Executar Diagnóstico Completo</button>
+        <button class="button danger" onclick="clearAllData()">Limpar Todos os Dados</button>
+        <div id="diagnostic-result"></div>
+    </div>
+
+    <div class="container">
+        <h2>5. Logs do Sistema</h2>
+        <div id="system-logs" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+            <em>Logs aparecerão aqui...</em>
+        </div>
+        <button class="button" onclick="clearLogs()">Limpar Logs</button>
+    </div>
+
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        let currentPatientId = null;
+        let currentToken = null;
+        let logs = [];
+
+        // Função para adicionar logs
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logs.push(logEntry);
+            
+            const logsDiv = document.getElementById('system-logs');
+            const logElement = document.createElement('div');
+            logElement.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#495057';
+            logElement.textContent = logEntry;
+            logsDiv.appendChild(logElement);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        // Simular a criação de um paciente (como seria feito no sistema real)
+        function simulatePatientCreation() {
+            const resultDiv = document.getElementById('creation-result');
+            addLog('Iniciando simulação de criação de paciente...');
+            
+            try {
+                // Simular dados do paciente
+                currentPatientId = crypto.randomUUID();
+                const patientData = {
+                    id: currentPatientId,
+                    full_name: 'João Silva Teste',
+                    birth_date: '1985-05-15',
+                    bed: 'Leito 402',
+                    notes: 'Paciente criado para teste do fluxo automático de tokens',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+
+                addLog(`Paciente criado com ID: ${currentPatientId}`, 'success');
+
+                // Simular a geração automática do token (como implementado no PatientForm)
+                addLog('Gerando token familiar automaticamente...');
+                
+                currentToken = crypto.randomUUID() + '-' + Date.now().toString(36);
+                const username = `familia_${currentPatientId.slice(-6)}_${Date.now().toString(36).slice(-4)}`;
+                const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+                
+                const familyToken = {
+                    id: crypto.randomUUID(),
+                    patient_id: currentPatientId,
+                    token: currentToken,
+                    username: username,
+                    password: password,
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+
+                // Salvar no localStorage (simulando o que o sistema faz)
+                const existingTokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                existingTokens.push(familyToken);
+                localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(existingTokens));
+
+                addLog('Token familiar gerado e salvo automaticamente', 'success');
+
+                resultDiv.innerHTML = `
+                    <div class="step completed">
+                        <h4>✅ Paciente Criado com Sucesso</h4>
+                        <p><strong>Nome:</strong> ${patientData.full_name}</p>
+                        <p><strong>ID:</strong> <code>${currentPatientId}</code></p>
+                        <p><strong>Leito:</strong> ${patientData.bed}</p>
+                    </div>
+                    <div class="step completed">
+                        <h4>✅ Token Familiar Gerado Automaticamente</h4>
+                        <p><strong>Usuário:</strong> ${username}</p>
+                        <p><strong>Senha:</strong> ${password}</p>
+                        <p><strong>Token:</strong> ${currentToken.substring(0, 20)}...</p>
+                    </div>
+                `;
+
+                // Habilitar próximos botões
+                document.getElementById('check-token-btn').disabled = false;
+                document.getElementById('test-access-btn').disabled = false;
+
+            } catch (error) {
+                addLog(`Erro na criação: ${error.message}`, 'error');
+                resultDiv.innerHTML = `<div class="error">Erro ao simular criação: ${error.message}</div>`;
+            }
+        }
+
+        // Verificar se o token foi gerado corretamente
+        function checkAutoToken() {
+            const resultDiv = document.getElementById('token-check-result');
+            addLog('Verificando token gerado automaticamente...');
+            
+            if (!currentPatientId || !currentToken) {
+                resultDiv.innerHTML = '<div class="error">Primeiro execute a simulação de criação!</div>';
+                return;
+            }
+
+            try {
+                const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                const tokenData = tokens.find(t => 
+                    t.patient_id === currentPatientId && 
+                    t.token === currentToken && 
+                    t.is_active
+                );
+
+                if (tokenData) {
+                    addLog('Token encontrado e válido', 'success');
+                    resultDiv.innerHTML = `
+                        <div class="step completed">
+                            <h4>✅ Token Válido Encontrado</h4>
+                            <p>O token foi gerado automaticamente e está disponível no localStorage.</p>
+                            <p><strong>Paciente ID:</strong> ${tokenData.patient_id}</p>
+                            <p><strong>Usuário:</strong> ${tokenData.username}</p>
+                            <p><strong>Status:</strong> ${tokenData.is_active ? 'Ativo' : 'Inativo'}</p>
+                            <p><strong>Criado em:</strong> ${new Date(tokenData.created_at).toLocaleString()}</p>
+                        </div>
+                    `;
+                } else {
+                    addLog('Token não encontrado ou inválido', 'error');
+                    resultDiv.innerHTML = `
+                        <div class="step error">
+                            <h4>❌ Token Não Encontrado</h4>
+                            <p>O token não foi encontrado no localStorage ou está inativo.</p>
+                            <p><strong>Procurando por:</strong></p>
+                            <p>Patient ID: ${currentPatientId}</p>
+                            <p>Token: ${currentToken.substring(0, 20)}...</p>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                addLog(`Erro na verificação: ${error.message}`, 'error');
+                resultDiv.innerHTML = `<div class="error">Erro ao verificar token: ${error.message}</div>`;
+            }
+        }
+
+        // Testar acesso familiar
+        function testFamilyAccess() {
+            const resultDiv = document.getElementById('access-result');
+            addLog('Testando acesso ao dashboard familiar...');
+            
+            if (!currentPatientId || !currentToken) {
+                resultDiv.innerHTML = '<div class="error">Primeiro execute a simulação e verificação!</div>';
+                return;
+            }
+
+            try {
+                const accessUrl = `http://localhost:8080/family/${currentPatientId}/${currentToken}`;
+                addLog(`URL de acesso gerada: ${accessUrl}`);
+                
+                resultDiv.innerHTML = `
+                    <div class="step completed">
+                        <h4>✅ URL de Acesso Gerada</h4>
+                        <p>O token gerado automaticamente pode ser usado para acessar o dashboard familiar.</p>
+                        <p><strong>URL de Acesso:</strong></p>
+                        <p><code>${accessUrl}</code></p>
+                        <p><a href="${accessUrl}" target="_blank" class="button success">🔗 Testar Acesso no Dashboard</a></p>
+                        <div class="info">
+                            <strong>Nota:</strong> Clique no link acima para testar se o acesso funciona corretamente.
+                        </div>
+                    </div>
+                `;
+
+                addLog('URL de acesso criada com sucesso', 'success');
+
+            } catch (error) {
+                addLog(`Erro no teste de acesso: ${error.message}`, 'error');
+                resultDiv.innerHTML = `<div class="error">Erro ao testar acesso: ${error.message}</div>`;
+            }
+        }
+
+        // Executar diagnóstico completo
+        function runFullDiagnostic() {
+            const resultDiv = document.getElementById('diagnostic-result');
+            addLog('Executando diagnóstico completo do sistema...');
+            
+            try {
+                const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                const activeTokens = tokens.filter(t => t.is_active);
+                const inactiveTokens = tokens.filter(t => !t.is_active);
+
+                let html = '<div class="info"><h4>📊 Diagnóstico do Sistema</h4>';
+                
+                // Estatísticas gerais
+                html += `
+                    <p><strong>Total de tokens:</strong> ${tokens.length}</p>
+                    <p><strong>Tokens ativos:</strong> ${activeTokens.length}</p>
+                    <p><strong>Tokens inativos:</strong> ${inactiveTokens.length}</p>
+                `;
+
+                // Verificar se há tokens órfãos (sem paciente correspondente)
+                const uniquePatients = [...new Set(tokens.map(t => t.patient_id))];
+                html += `<p><strong>Pacientes únicos:</strong> ${uniquePatients.length}</p>`;
+
+                // Listar todos os tokens ativos
+                if (activeTokens.length > 0) {
+                    html += '<h5>Tokens Ativos:</h5>';
+                    activeTokens.forEach((token, index) => {
+                        const isCurrentToken = token.patient_id === currentPatientId && token.token === currentToken;
+                        html += `
+                            <div style="border: 1px solid ${isCurrentToken ? '#28a745' : '#ddd'}; padding: 10px; margin: 5px 0; border-radius: 4px; background: ${isCurrentToken ? '#d4edda' : 'white'};">
+                                <strong>Token ${index + 1}${isCurrentToken ? ' (Atual)' : ''}:</strong><br>
+                                <strong>Paciente ID:</strong> ${token.patient_id.substring(0, 8)}...<br>
+                                <strong>Usuário:</strong> ${token.username}<br>
+                                <strong>Criado:</strong> ${new Date(token.created_at).toLocaleString()}<br>
+                                ${isCurrentToken ? '<strong>✅ Este é o token do teste atual</strong>' : ''}
+                            </div>
+                        `;
+                    });
+                }
+
+                html += '</div>';
+                resultDiv.innerHTML = html;
+
+                addLog(`Diagnóstico concluído: ${tokens.length} tokens encontrados`, 'success');
+
+            } catch (error) {
+                addLog(`Erro no diagnóstico: ${error.message}`, 'error');
+                resultDiv.innerHTML = `<div class="error">Erro no diagnóstico: ${error.message}</div>`;
+            }
+        }
+
+        // Limpar todos os dados
+        function clearAllData() {
+            if (confirm('Tem certeza que deseja limpar todos os dados de teste?')) {
+                localStorage.removeItem(FAMILY_TOKENS_KEY);
+                currentPatientId = null;
+                currentToken = null;
+                
+                // Resetar interface
+                document.getElementById('creation-result').innerHTML = '';
+                document.getElementById('token-check-result').innerHTML = '';
+                document.getElementById('access-result').innerHTML = '';
+                document.getElementById('diagnostic-result').innerHTML = '';
+                
+                document.getElementById('check-token-btn').disabled = true;
+                document.getElementById('test-access-btn').disabled = true;
+                
+                addLog('Todos os dados foram limpos', 'success');
+            }
+        }
+
+        // Limpar logs
+        function clearLogs() {
+            logs = [];
+            document.getElementById('system-logs').innerHTML = '<em>Logs aparecerão aqui...</em>';
+        }
+
+        // Inicializar página
+        window.onload = function() {
+            addLog('Sistema de teste inicializado');
+            addLog('Pronto para testar o fluxo de criação de pacientes');
+        };
+    </script>
+</body>
+</html>

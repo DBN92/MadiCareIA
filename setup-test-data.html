@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Test Data - Family Access</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .info { background: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .credentials { background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin: 15px 0; font-family: monospace; }
+        button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; margin: 10px 5px; }
+        button:hover { background: #0056b3; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Setup Test Data - Family Access</h1>
+        <p>Esta ferramenta configura dados de teste para o sistema de acesso familiar.</p>
+        
+        <div class="info">
+            <strong>📋 Instruções:</strong><br>
+            1. Clique em "Configurar Dados de Teste" para criar um paciente e credenciais<br>
+            2. Use as credenciais geradas para testar o login em: <a href="http://localhost:8080/family/login" target="_blank">http://localhost:8080/family/login</a><br>
+            3. Após o login, você será redirecionado para o dashboard do paciente
+        </div>
+        
+        <button onclick="setupTestData()">🚀 Configurar Dados de Teste</button>
+        <button onclick="clearAllData()" class="danger">🗑️ Limpar Todos os Dados</button>
+        <button onclick="checkCurrentData()">🔍 Verificar Dados Atuais</button>
+        
+        <div id="result"></div>
+        
+        <div id="login-test" style="display: none; margin-top: 30px; padding: 20px; border: 2px solid #007bff; border-radius: 8px;">
+            <h3>🧪 Teste de Login Rápido</h3>
+            <p>Use as credenciais abaixo para testar:</p>
+            <div>
+                <input type="text" id="test-username" placeholder="Usuário" readonly>
+                <input type="password" id="test-password" placeholder="Senha" readonly>
+                <button onclick="testLogin()">🔐 Testar Login</button>
+                <button onclick="goToLogin()">🌐 Ir para Página de Login</button>
+            </div>
+            <div id="login-result"></div>
+        </div>
+    </div>
+    
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        let currentCredentials = null;
+        
+        function setupTestData() {
+            const result = document.getElementById('result');
+            
+            try {
+                // Criar paciente de teste
+                const testPatientId = 'patient-' + Date.now();
+                const testPatient = {
+                    id: testPatientId,
+                    full_name: 'Maria da Silva',
+                    birth_date: '1975-03-15',
+                    bed: 'Leito 205',
+                    notes: 'Paciente em recuperação pós-cirúrgica',
+                    is_active: true,
+                    created_at: new Date().toISOString(),
+                    created_by: 'test-user',
+                    org_id: 'test-org'
+                };
+                
+                // Gerar credenciais de acesso familiar
+                const token = crypto.randomUUID() + '-' + Date.now().toString(36);
+                const username = `familia_${testPatientId.slice(-6)}_${Date.now().toString(36).slice(-4)}`;
+                const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+                
+                const familyToken = {
+                    id: crypto.randomUUID(),
+                    patient_id: testPatientId,
+                    token: token,
+                    username: username,
+                    password: password,
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+                
+                // Salvar no localStorage
+                const existingTokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                existingTokens.push(familyToken);
+                localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(existingTokens));
+                
+                // Salvar referência das credenciais atuais
+                currentCredentials = familyToken;
+                
+                // Mostrar resultado
+                result.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Dados de Teste Configurados com Sucesso!</h3>
+                        <p><strong>Paciente criado:</strong> ${testPatient.full_name} (${testPatient.bed})</p>
+                    </div>
+                    
+                    <div class="credentials">
+                        <h4>🔑 Credenciais de Acesso Familiar:</h4>
+                        <p><strong>Usuário:</strong> ${username}</p>
+                        <p><strong>Senha:</strong> ${password}</p>
+                        <p><strong>Token:</strong> ${token}</p>
+                        <p><strong>URL de Acesso:</strong> <a href="http://localhost:8080/family/${testPatientId}/${token}/dashboard" target="_blank">http://localhost:8080/family/${testPatientId}/${token}/dashboard</a></p>
+                    </div>
+                    
+                    <div class="info">
+                        <strong>📝 Próximos Passos:</strong><br>
+                        1. Use as credenciais acima para fazer login em: <a href="http://localhost:8080/family/login" target="_blank">http://localhost:8080/family/login</a><br>
+                        2. Ou clique no link direto para acessar o dashboard<br>
+                        3. Use o teste rápido abaixo para verificar se as credenciais funcionam
+                    </div>
+                `;
+                
+                // Mostrar seção de teste
+                document.getElementById('login-test').style.display = 'block';
+                document.getElementById('test-username').value = username;
+                document.getElementById('test-password').value = password;
+                
+            } catch (error) {
+                result.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                        <h3>❌ Erro ao Configurar Dados</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function clearAllData() {
+            if (confirm('Tem certeza que deseja limpar todos os dados de teste?')) {
+                localStorage.removeItem(FAMILY_TOKENS_KEY);
+                localStorage.clear();
+                
+                document.getElementById('result').innerHTML = `
+                    <div class="info">
+                        <h3>🧹 Dados Limpos</h3>
+                        <p>Todos os dados de teste foram removidos do localStorage.</p>
+                    </div>
+                `;
+                
+                document.getElementById('login-test').style.display = 'none';
+                currentCredentials = null;
+            }
+        }
+        
+        function checkCurrentData() {
+            const result = document.getElementById('result');
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            
+            if (tokens.length === 0) {
+                result.innerHTML = `
+                    <div class="info">
+                        <h3>📊 Status dos Dados</h3>
+                        <p>Nenhum token de acesso familiar encontrado no localStorage.</p>
+                        <p>Clique em "Configurar Dados de Teste" para criar dados de teste.</p>
+                    </div>
+                `;
+            } else {
+                const activeTokens = tokens.filter(t => t.is_active);
+                result.innerHTML = `
+                    <div class="success">
+                        <h3>📊 Status dos Dados</h3>
+                        <p><strong>Total de tokens:</strong> ${tokens.length}</p>
+                        <p><strong>Tokens ativos:</strong> ${activeTokens.length}</p>
+                    </div>
+                    
+                    <div class="credentials">
+                        <h4>🔑 Tokens Ativos:</h4>
+                        <pre>${JSON.stringify(activeTokens, null, 2)}</pre>
+                    </div>
+                `;
+                
+                if (activeTokens.length > 0) {
+                    const firstToken = activeTokens[0];
+                    document.getElementById('login-test').style.display = 'block';
+                    document.getElementById('test-username').value = firstToken.username;
+                    document.getElementById('test-password').value = firstToken.password;
+                    currentCredentials = firstToken;
+                }
+            }
+        }
+        
+        function testLogin() {
+            const username = document.getElementById('test-username').value;
+            const password = document.getElementById('test-password').value;
+            const loginResult = document.getElementById('login-result');
+            
+            if (!username || !password) {
+                loginResult.innerHTML = '<p style="color: red;">❌ Credenciais não encontradas</p>';
+                return;
+            }
+            
+            // Simular autenticação
+            const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            const tokenData = tokens.find(t => 
+                t.username === username && 
+                t.password === password && 
+                t.is_active
+            );
+            
+            if (tokenData) {
+                loginResult.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Teste de Autenticação Bem-sucedido!</h4>
+                        <p>As credenciais são válidas e o login deve funcionar.</p>
+                        <p><strong>Paciente ID:</strong> ${tokenData.patient_id}</p>
+                        <p><strong>Token:</strong> ${tokenData.token}</p>
+                    </div>
+                `;
+            } else {
+                loginResult.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                        <h4>❌ Falha na Autenticação</h4>
+                        <p>As credenciais não foram encontradas ou são inválidas.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function goToLogin() {
+            window.open('http://localhost:8080/family/login', '_blank');
+        }
+        
+        // Verificar dados ao carregar a página
+        window.onload = function() {
+            checkCurrentData();
+        };
+    </script>
+</body>
+</html>

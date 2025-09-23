@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Family Access</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        .credentials { background: #e8f5e8; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Debug Family Access System</h1>
+    
+    <div class="section">
+        <h2>1. Verificar Dados Existentes</h2>
+        <button onclick="checkExistingData()">Verificar LocalStorage</button>
+        <div id="existing-data"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Simular Criação de Paciente</h2>
+        <button onclick="createTestPatient()">Criar Paciente de Teste</button>
+        <div id="patient-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Gerar Credenciais de Teste</h2>
+        <button onclick="generateTestCredentials()">Gerar Credenciais</button>
+        <div id="credentials-result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. Testar Autenticação</h2>
+        <input type="text" id="test-username" placeholder="Usuário" style="margin: 5px; padding: 5px;">
+        <input type="password" id="test-password" placeholder="Senha" style="margin: 5px; padding: 5px;">
+        <button onclick="testAuthentication()">Testar Login</button>
+        <div id="auth-result"></div>
+    </div>
+    
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        let testPatientId = 'test-patient-' + Date.now();
+        
+        function checkExistingData() {
+            const output = document.getElementById('existing-data');
+            
+            // Verificar tokens
+            const tokens = localStorage.getItem(FAMILY_TOKENS_KEY);
+            let html = '<h3>Tokens no localStorage:</h3>';
+            
+            if (tokens) {
+                const parsedTokens = JSON.parse(tokens);
+                html += '<pre>' + JSON.stringify(parsedTokens, null, 2) + '</pre>';
+                
+                const activeTokens = parsedTokens.filter(t => t.is_active);
+                if (activeTokens.length > 0) {
+                    html += '<h4>Credenciais Ativas:</h4>';
+                    activeTokens.forEach(token => {
+                        html += `<div class="credentials">`;
+                        html += `<strong>Usuário:</strong> ${token.username}<br>`;
+                        html += `<strong>Senha:</strong> ${token.password}<br>`;
+                        html += `<strong>Paciente ID:</strong> ${token.patient_id}<br>`;
+                        html += `<strong>Criado em:</strong> ${new Date(token.created_at).toLocaleString()}`;
+                        html += `</div>`;
+                    });
+                }
+            } else {
+                html += '<p>Nenhum token encontrado</p>';
+            }
+            
+            output.innerHTML = html;
+        }
+        
+        function createTestPatient() {
+            const output = document.getElementById('patient-result');
+            
+            // Simular criação de paciente (normalmente seria via Supabase)
+            const testPatient = {
+                id: testPatientId,
+                full_name: 'João da Silva (Teste)',
+                birth_date: '1980-01-01',
+                bed: 'Leito 101',
+                notes: 'Paciente de teste para debug',
+                is_active: true,
+                created_at: new Date().toISOString()
+            };
+            
+            output.innerHTML = `
+                <h4>Paciente de Teste Criado:</h4>
+                <pre>${JSON.stringify(testPatient, null, 2)}</pre>
+            `;
+        }
+        
+        function generateTestCredentials() {
+            const output = document.getElementById('credentials-result');
+            
+            try {
+                // Simular geração de token (baseado na função real)
+                const token = crypto.randomUUID() + '-' + Date.now().toString(36);
+                const username = `familia_${testPatientId.slice(-6)}_${Date.now().toString(36).slice(-4)}`;
+                const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+                
+                const newToken = {
+                    id: crypto.randomUUID(),
+                    patient_id: testPatientId,
+                    token: token,
+                    username: username,
+                    password: password,
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+                
+                // Salvar no localStorage
+                const existingTokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                existingTokens.push(newToken);
+                localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(existingTokens));
+                
+                // Preencher campos de teste
+                document.getElementById('test-username').value = username;
+                document.getElementById('test-password').value = password;
+                
+                output.innerHTML = `
+                    <h4>Credenciais Geradas com Sucesso!</h4>
+                    <div class="credentials">
+                        <strong>Usuário:</strong> ${username}<br>
+                        <strong>Senha:</strong> ${password}<br>
+                        <strong>Token:</strong> ${token}<br>
+                        <strong>Paciente ID:</strong> ${testPatientId}
+                    </div>
+                    <p><em>Credenciais foram automaticamente preenchidas nos campos de teste abaixo.</em></p>
+                `;
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Erro ao gerar credenciais: ${error.message}</p>`;
+            }
+        }
+        
+        function testAuthentication() {
+            const output = document.getElementById('auth-result');
+            const username = document.getElementById('test-username').value;
+            const password = document.getElementById('test-password').value;
+            
+            if (!username || !password) {
+                output.innerHTML = '<p style="color: red;">Por favor, preencha usuário e senha</p>';
+                return;
+            }
+            
+            try {
+                // Simular autenticação (baseado na função real)
+                const tokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                const tokenData = tokens.find(t => 
+                    t.username === username && 
+                    t.password === password && 
+                    t.is_active
+                );
+                
+                if (tokenData) {
+                    output.innerHTML = `
+                        <h4 style="color: green;">✅ Autenticação Bem-sucedida!</h4>
+                        <div class="credentials">
+                            <strong>Token encontrado:</strong><br>
+                            <pre>${JSON.stringify(tokenData, null, 2)}</pre>
+                        </div>
+                        <p><strong>URL de acesso:</strong> <code>http://localhost:8080/family/${tokenData.patient_id}/${tokenData.token}/dashboard</code></p>
+                    `;
+                } else {
+                    output.innerHTML = `
+                        <h4 style="color: red;">❌ Falha na Autenticação</h4>
+                        <p>Credenciais não encontradas ou inválidas.</p>
+                        <p><strong>Usuário informado:</strong> ${username}</p>
+                        <p><strong>Senha informada:</strong> ${password}</p>
+                        <h5>Tokens disponíveis:</h5>
+                        <pre>${JSON.stringify(tokens, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Erro na autenticação: ${error.message}</p>`;
+            }
+        }
+        
+        // Verificar dados existentes ao carregar a página
+        window.onload = function() {
+            checkExistingData();
+        };
+    </script>
+</body>
+</html>
