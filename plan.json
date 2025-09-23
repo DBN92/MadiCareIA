@@ -1,0 +1,30 @@
+{
+  "providers": ["node"],
+  "buildImage": "ghcr.io/railwayapp/nixpacks:ubuntu-1704478027",
+  "variables": {
+    "NODE_VERSION": "20",
+    "NPM_CONFIG_PRODUCTION": "false"
+  },
+  "staticAssets": {
+    "dist": "/app/dist"
+  },
+  "phases": {
+    "setup": {
+      "nixPkgs": ["nodejs_20", "npm-9_x"],
+      "nixLibs": [],
+      "nixOverlays": [],
+      "nixpkgsArchive": "5a0711127cd8b916c3d3128f473388c8c79df0da"
+    },
+    "install": {
+      "dependsOn": ["setup"],
+      "cmds": ["npm ci"]
+    },
+    "build": {
+      "dependsOn": ["install"],
+      "cmds": ["npm run build"]
+    }
+  },
+  "start": {
+    "cmd": "npm run preview"
+  }
+}

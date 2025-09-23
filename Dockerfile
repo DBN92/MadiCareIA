@@ -1,5 +1,9 @@
 # Etapa 1: Build 
-FROM node:20-alpine AS build 
+FROM node:20-alpine AS build
+
+# Variáveis do Nixpacks
+ARG NIXPACKS_PATH=.
+ENV NIXPACKS_PATH=$NIXPACKS_PATH 
 
 WORKDIR /app 
 COPY package*.json ./ 
