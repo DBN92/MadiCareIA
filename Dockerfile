@@ -1,20 +1,21 @@
-# Imagem base
-FROM node:20-alpine AS build
+# Etapa 1: Build do projeto 
+FROM node:20-alpine AS build 
 
-# Diretório de trabalho
-WORKDIR /app
+WORKDIR /app 
 
-# Copia arquivos de dependência e instala
-COPY package*.json ./
-RUN npm install
+# Copia arquivos de dependência e instala 
+COPY package*.json ./ 
+RUN npm install 
 
-# Copia o resto do projeto e builda
-COPY . .
-RUN npm run build
+# Copia o resto do código e faz o build 
+COPY . . 
+RUN npm run build 
 
-# Servidor final (nginx serve arquivos estáticos)
-FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+# Etapa 2: Servidor Nginx para servir o build 
+FROM nginx:alpine 
 
-EXPOSE 80
+# Copia os arquivos buildados para o Nginx 
+COPY --from=build /app/dist /usr/share/nginx/html 
+
+EXPOSE 80 
 CMD ["nginx", "-g", "daemon off;"]
