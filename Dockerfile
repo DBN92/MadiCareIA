@@ -3,22 +3,21 @@ FROM node:20-alpine AS build
 
 WORKDIR /app 
 
-# Copia arquivos de dependência e instala 
 COPY package*.json ./ 
 RUN npm install 
 
-# Copia o resto do código e faz o build 
 COPY . . 
 RUN npm run build 
 
-# Etapa 2: Servidor Nginx para servir o build 
+# Etapa 2: Servidor Nginx 
 FROM nginx:alpine 
 
-# Copia os arquivos buildados para o Nginx 
-COPY --from=build /app/dist /usr/share/nginx/html 
+# Remove a config padrão e adiciona a nossa 
+RUN rm /etc/nginx/conf.d/default.conf 
+COPY nginx.conf /etc/nginx/conf.d/ 
 
-# Copia configuração customizada do Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copia o build para o Nginx 
+COPY --from=build /app/dist /usr/share/nginx/html 
 
 EXPOSE 80 
 CMD ["nginx", "-g", "daemon off;"]
