@@ -207,11 +207,12 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           break
       }
       
-      // Usar addEvent diretamente em vez de onSave
-      await addEvent(data)
-      
-      // Chamar onSave se fornecido (para compatibilidade)
-      await onSave?.(data)
+      // Usar onSave se fornecido, senão usar addEvent
+      if (onSave) {
+        await onSave(data)
+      } else {
+        await addEvent(data)
+      }
       
       // Limpar formulário após sucesso
       setLiquidForm({ type: "", amount: "", time: getCurrentDateTime(), notes: "" })
