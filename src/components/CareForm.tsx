@@ -607,9 +607,9 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Urina">Urina</SelectItem>
-                      <SelectItem value="Fezes">Fezes</SelectItem>
-                      <SelectItem value="Ambos">Ambos</SelectItem>
+                      <SelectItem value="urina">Urina</SelectItem>
+                      <SelectItem value="fezes">Fezes</SelectItem>
+                      <SelectItem value="ambos">Ambos</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
