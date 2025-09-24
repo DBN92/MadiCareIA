@@ -49,7 +49,7 @@ const FamilyCredentialsModal = ({ isOpen, onClose, credentials, patientName }: F
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-w-[95vw] sm:max-w-2xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -60,7 +60,7 @@ const FamilyCredentialsModal = ({ isOpen, onClose, credentials, patientName }: F
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-y-auto max-h-[60vh]">
           {/* Alert de Segurança */}
           <Alert>
             <AlertCircle className="h-4 w-4" />
