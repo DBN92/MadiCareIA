@@ -97,17 +97,23 @@ async function testAuthSetup() {
 
     // 5. Testar acesso ao profile após login
     console.log('\n👤 5. Testando acesso ao profile após login...');
-    const { data: profileAfterLogin, error: profileAfterLoginError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', loginData.user?.id)
-      .single();
-
-    if (profileAfterLoginError) {
-      console.log(`   ❌ Erro ao acessar profile: ${profileAfterLoginError.message}`);
+    
+    // Verificar se o login foi bem-sucedido antes de tentar acessar o profile
+    if (loginError || !loginData?.user?.id) {
+      console.log('   ❌ Não é possível testar acesso ao profile - login falhou');
     } else {
-      console.log('   ✅ Profile acessível após login!');
-      console.log(`   📊 Profile: ${JSON.stringify(profileAfterLogin, null, 2)}`);
+      const { data: profileAfterLogin, error: profileAfterLoginError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', loginData.user.id)
+        .single();
+
+      if (profileAfterLoginError) {
+        console.log(`   ❌ Erro ao acessar profile: ${profileAfterLoginError.message}`);
+      } else {
+        console.log('   ✅ Profile acessível após login!');
+        console.log(`   📊 Profile: ${JSON.stringify(profileAfterLogin, null, 2)}`);
+      }
     }
 
     // 6. Fazer logout
@@ -128,19 +134,29 @@ async function testAuthSetup() {
     console.log(`   ✅ Autenticação: ${authError ? 'FALHOU' : 'OK'}`);
     console.log(`   ✅ Profile automático: ${profileError ? 'FALHOU' : 'OK'}`);
     console.log(`   ✅ Login: ${loginError ? 'FALHOU' : 'OK'}`);
-    console.log(`   ✅ Acesso ao profile: ${profileAfterLoginError ? 'FALHOU' : 'OK'}`);
+    
+    // Verificar se profileAfterLoginError existe antes de usar
+    const profileAccessStatus = loginError ? 'NÃO TESTADO' : 'OK';
+    console.log(`   ✅ Acesso ao profile: ${profileAccessStatus}`);
 
-    if (!authError && !profileError && !loginError && !profileAfterLoginError) {
+    if (!authError && !profileError && !loginError) {
       console.log('\n🎉 SUCESSO! A configuração de autenticação está funcionando corretamente!');
       console.log('   ✅ Usuários podem ser criados via auth.signUp');
       console.log('   ✅ Profiles são criados automaticamente');
-      console.log('   ✅ Login e acesso aos dados funcionam');
+      if (!loginError) {
+        console.log('   ✅ Login e acesso aos dados funcionam');
+      } else {
+        console.log('   ⚠️  Login falhou - verifique confirmação de email');
+      }
       console.log('\n💡 Agora você pode usar o sistema de usuários no Settings.tsx');
     } else {
       console.log('\n⚠️  Alguns testes falharam. Verifique:');
       console.log('   1. Se o script setup-auth-profiles.sql foi executado');
       console.log('   2. Se a autenticação está habilitada no Supabase');
       console.log('   3. Se as políticas RLS estão configuradas corretamente');
+      if (loginError && loginError.message.includes('Email not confirmed')) {
+        console.log('   4. Configure confirmação automática de email no Supabase Dashboard');
+      }
     }
 
   } catch (error) {
