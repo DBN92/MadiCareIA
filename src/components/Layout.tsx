@@ -16,9 +16,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotifications } from '@/hooks/useNotifications'
 import { NotificationDropdown } from '@/components/NotificationDropdown'
 import { ProfilePhotoModal } from '@/components/ProfilePhotoModal'
-import { VirtualAssistant, VirtualAssistantToggle } from '@/components/VirtualAssistant'
 import { useIsMobile } from '@/hooks/use-mobile'
-import MobileNavigation from '@/components/MobileNavigation'
+import BottomNavigation from '@/components/BottomNavigation'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -28,20 +27,10 @@ export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth()
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications()
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false)
   const isMobile = useIsMobile()
 
   const handleLogout = () => {
     logout()
-  }
-
-  const handleMobileMenuToggle = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
-
-  const handleMobileMenuClose = () => {
-    setIsMobileMenuOpen(false)
   }
 
   const getRoleBadgeVariant = (role: string) => {
@@ -72,34 +61,19 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-muted/20">
+      <div className="min-h-screen flex w-full bg-muted/20 relative">
         <AppSidebar />
         <main className="flex-1 flex flex-col overflow-hidden">
           <header className={`bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 flex-shrink-0 ${isMobile ? 'h-14' : 'h-16'}`}>
             <div className={`flex items-center justify-between h-full ${isMobile ? 'px-3' : 'px-4 md:px-6'}`}>
               <div className="flex items-center gap-2 md:gap-4">
-                {isMobile ? (
-                  <>
-                    <MobileNavigation
-                      isOpen={isMobileMenuOpen}
-                      onToggle={handleMobileMenuToggle}
-                      onClose={handleMobileMenuClose}
-                    />
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm font-semibold text-foreground bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                        MediCare
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <SidebarTrigger className="h-8 w-8" />
-                )}
-                {!isMobile && (
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-semibold text-foreground bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                      MediCare
-                    </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold text-foreground bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    MediCare
                   </div>
+                </div>
+                {!isMobile && (
+                  <SidebarTrigger className="h-8 w-8" />
                 )}
               </div>
               <div className="flex items-center gap-2 md:gap-4">
@@ -170,22 +144,15 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
           </header>
-          <div className={`flex-1 space-y-4 md:space-y-6 bg-gradient-to-br from-background to-muted/20 ${isMobile ? 'p-3 pt-4' : 'p-4 md:p-8 pt-6'}`}>
+          <div className={`flex-1 overflow-y-auto space-y-4 md:space-y-6 bg-gradient-to-br from-background to-muted/20 ${isMobile ? 'p-3 pt-4 pb-20' : 'p-4 md:p-8 pt-6'}`}>
             {children}
           </div>
         </main>
+        {/* BottomNavigation removido daqui - será renderizado separadamente no App.tsx */}
       </div>
       <ProfilePhotoModal
         open={isProfileModalOpen}
         onOpenChange={setIsProfileModalOpen}
-      />
-      <VirtualAssistantToggle
-        onClick={() => setIsAssistantOpen(true)}
-        isOpen={isAssistantOpen}
-      />
-      <VirtualAssistant
-        isOpen={isAssistantOpen}
-        onToggle={() => setIsAssistantOpen(!isAssistantOpen)}
       />
     </SidebarProvider>
   )

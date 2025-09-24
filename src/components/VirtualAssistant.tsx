@@ -184,7 +184,7 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9998]" style={{ zIndex: 9998 }}>
+    <div className="fixed bottom-20 right-4 z-[9998]" style={{ zIndex: 9998 }}>
       <Card className={`w-96 shadow-2xl border-2 transition-all duration-300 ${
         isMinimized ? 'h-16' : 'h-[600px]'
       }`}>
@@ -343,7 +343,7 @@ export const VirtualAssistantToggle: React.FC<{
   return (
     <button 
       onClick={onClick}
-      className="fixed bottom-4 right-4 z-[9999] 
+      className="fixed bottom-20 right-4 z-[9999] 
                  flex items-center justify-center 
                  h-12 w-12 sm:h-14 sm:w-14 
                  rounded-full bg-blue-600 hover:bg-blue-700 

@@ -8,6 +8,10 @@ import { Layout } from "@/components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SuperAdminProtectedRoute from "./components/superadminprotectedroute";
 import PageTransition from "./components/PageTransition";
+import BottomNavigation from "./components/BottomNavigation";
+import { VirtualAssistant, VirtualAssistantToggle } from "./components/VirtualAssistant";
+import { useIsMobile } from "./hooks/use-mobile";
+import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import Patients from "./pages/Patients";
 import Care from "./pages/Care";
@@ -33,6 +37,102 @@ import SuperAdminTestPage from "./pages/SuperAdminTestPage";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const isMobile = useIsMobile();
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  
+  return (
+    <>
+      <PageTransition>
+        <Routes>
+          {/* Rota pública de login */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* Rotas públicas do painel familiar */}
+          <Route path="/family/login" element={<FamilyLogin />} />
+          <Route path="/family/:patientId/:token" element={<FamilyDashboard />} />
+          <Route path="/family/:patientId/:token/dashboard" element={<FamilyDashboard />} />
+          <Route path="/family/:patientId/:token/care" element={<FamilyCareScreen />} />
+          
+          {/* Rotas públicas do demo */}
+          <Route path="/demo" element={<DemoLanding />} />
+          <Route path="/demo/signup" element={<DemoSignup />} />
+          <Route path="/demo/login" element={<DemoLogin />} />
+          <Route path="/demo/dashboard" element={
+            <Layout>
+              <Dashboard />
+            </Layout>
+          } />
+
+          {/* Rotas do Super Admin */}
+          <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+            <Route path="/super-admin/login-simple" element={<SuperAdminLoginSimple />} />
+            <Route path="/super-admin/dashboard" element={
+        <SuperAdminProtectedRoute>
+          <SuperAdminDashboard />
+        </SuperAdminProtectedRoute>
+      } />
+      <Route path="/super-admin/create-client" element={
+        <SuperAdminProtectedRoute>
+          <CreateWhiteLabelClient />
+        </SuperAdminProtectedRoute>
+      } />
+      <Route path="/super-admin/client/:clientId/theme" element={
+        <SuperAdminProtectedRoute>
+          <ThemeConfigurator />
+        </SuperAdminProtectedRoute>
+      } />
+      <Route path="/super-admin/client/:clientId/assets" element={
+        <SuperAdminProtectedRoute>
+          <AssetManager />
+        </SuperAdminProtectedRoute>
+      } />
+      <Route path="/super-admin/tests" element={
+        <SuperAdminProtectedRoute>
+          <SuperAdminTestPage />
+        </SuperAdminProtectedRoute>
+      } />
+
+          {/* Rotas protegidas principais */}
+           <Route path="/" element={
+             <ProtectedRoute>
+               <Layout>
+                 <Outlet />
+               </Layout>
+             </ProtectedRoute>
+           }>
+            <Route index element={<Dashboard />} />
+            <Route path="patients" element={<Patients />} />
+            <Route path="care" element={<Care />} />
+            <Route path="care/:patientId" element={<Care />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={
+              <ProtectedRoute requiredRole="admin">
+                <Settings />
+              </ProtectedRoute>
+            } />
+            {/* Rota 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+        </PageTransition>
+        
+        {/* BottomNavigation como div separada da root */}
+        {isMobile && <BottomNavigation />}
+        
+        {/* VirtualAssistant como div separada da root */}
+        <VirtualAssistantToggle
+          onClick={() => setIsAssistantOpen(true)}
+          isOpen={isAssistantOpen}
+        />
+        <VirtualAssistant
+          isOpen={isAssistantOpen}
+          onToggle={() => setIsAssistantOpen(!isAssistantOpen)}
+        />
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -40,80 +140,7 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
-          <PageTransition>
-            <Routes>
-              {/* Rota pública de login */}
-              <Route path="/login" element={<Login />} />
-              
-              {/* Rotas públicas do painel familiar */}
-              <Route path="/family/login" element={<FamilyLogin />} />
-              <Route path="/family/:patientId/:token" element={<FamilyDashboard />} />
-              <Route path="/family/:patientId/:token/dashboard" element={<FamilyDashboard />} />
-              <Route path="/family/:patientId/:token/care" element={<FamilyCareScreen />} />
-            
-            {/* Rotas públicas do demo */}
-            <Route path="/demo" element={<DemoLanding />} />
-            <Route path="/demo/signup" element={<DemoSignup />} />
-            <Route path="/demo/login" element={<DemoLogin />} />
-            <Route path="/demo/dashboard" element={
-              <Layout>
-                <Dashboard />
-              </Layout>
-            } />
-
-            {/* Super Admin Routes */}
-            <Route path="/super-admin/login" element={<SuperAdminLogin />} />
-              <Route path="/super-admin/login-simple" element={<SuperAdminLoginSimple />} />
-              <Route path="/super-admin/dashboard" element={
-          <SuperAdminProtectedRoute>
-            <SuperAdminDashboard />
-          </SuperAdminProtectedRoute>
-        } />
-        <Route path="/super-admin/create-client" element={
-          <SuperAdminProtectedRoute>
-            <CreateWhiteLabelClient />
-          </SuperAdminProtectedRoute>
-        } />
-        <Route path="/super-admin/client/:clientId/theme" element={
-          <SuperAdminProtectedRoute>
-            <ThemeConfigurator />
-          </SuperAdminProtectedRoute>
-        } />
-        <Route path="/super-admin/client/:clientId/assets" element={
-          <SuperAdminProtectedRoute>
-            <AssetManager />
-          </SuperAdminProtectedRoute>
-        } />
-        <Route path="/super-admin/tests" element={
-          <SuperAdminProtectedRoute>
-            <SuperAdminTestPage />
-          </SuperAdminProtectedRoute>
-        } />
-
-            
-            {/* Rotas protegidas */}
-             <Route path="/" element={
-               <ProtectedRoute>
-                 <Layout>
-                   <Outlet />
-                 </Layout>
-               </ProtectedRoute>
-             }>
-              <Route index element={<Dashboard />} />
-              <Route path="patients" element={<Patients />} />
-              <Route path="care" element={<Care />} />
-              <Route path="care/:patientId" element={<Care />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={
-                <ProtectedRoute requiredRole="admin">
-                  <Settings />
-                </ProtectedRoute>
-              } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-          </PageTransition>
+          <AppContent />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
