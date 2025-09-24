@@ -79,15 +79,22 @@ export function Layout({ children }: LayoutProps) {
             <div className={`flex items-center justify-between h-full ${isMobile ? 'px-3' : 'px-4 md:px-6'}`}>
               <div className="flex items-center gap-2 md:gap-4">
                 {isMobile ? (
-                  <MobileNavigation
-                    isOpen={isMobileMenuOpen}
-                    onToggle={handleMobileMenuToggle}
-                    onClose={handleMobileMenuClose}
-                  />
+                  <>
+                    <MobileNavigation
+                      isOpen={isMobileMenuOpen}
+                      onToggle={handleMobileMenuToggle}
+                      onClose={handleMobileMenuClose}
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm font-semibold text-foreground bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                        MediCare
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <SidebarTrigger className="h-8 w-8" />
                 )}
-                {isMobile && (
+                {!isMobile && (
                   <div className="flex items-center gap-2">
                     <div className="text-sm font-semibold text-foreground bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                       MediCare

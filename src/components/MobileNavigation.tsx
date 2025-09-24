@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import { Menu, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
-  Menu,
-  X,
   BarChart3,
   Users,
   Heart,
@@ -11,8 +11,6 @@ import {
   Activity,
   ChevronRight,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useIsMobile } from '@/hooks/use-mobile'
 import ColoSaudeLogo from './ColoSaudeLogo'
 
 const navigationItems = [
@@ -31,44 +29,28 @@ interface MobileNavigationProps {
 
 export function MobileNavigation({ isOpen, onToggle, onClose }: MobileNavigationProps) {
   const location = useLocation()
-  const isMobile = useIsMobile()
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const minSwipeDistance = 50// Fechar menu quando navegar ou redimensionar
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        onClose()
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [onClose])
 
   // Fechar menu ao navegar
   useEffect(() => {
-    onClose()
+    if (isOpen) {
+      onClose()
+    }
   }, [location.pathname, onClose])
 
-  // Fechar menu ao redimensionar para desktop
-  useEffect(() => {
-    if (!isMobile && isOpen) {
-      onClose()
-    }
-  }, [isMobile, isOpen, onClose])
-
-  // Gestos de swipe para fechar o menu
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > 50
-    
-    if (isLeftSwipe) {
-      onClose()
-    }
-  }
-
-  // Prevenir scroll do body quando menu está aberto
+  // Prevenir scroll do body quando menu estiver aberto
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -81,25 +63,45 @@ export function MobileNavigation({ isOpen, onToggle, onClose }: MobileNavigation
     }
   }, [isOpen])
 
-  if (!isMobile) return null
+  // Gestos de swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > 50
+    
+    if (isLeftSwipe && isOpen) {
+      onClose()
+    }
+  }
 
   return (
     <>
-      {/* Botão do menu hambúrguer */}
+      {/* Botão do menu hambúrguer - sempre visível em mobile */}
       <Button
         variant="ghost"
         size="icon"
         onClick={onToggle}
-        className="h-8 w-8 md:hidden"
-        aria-label="Abrir menu de navegação"
+        className="flex items-center justify-center hover:bg-muted/80 transition-colors md:hidden h-10 w-10 p-0 relative z-50"
+        aria-label="Toggle mobile menu"
+        style={{ minHeight: '40px', minWidth: '40px' }}
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-6 w-6 text-foreground" />
       </Button>
 
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -107,15 +109,15 @@ export function MobileNavigation({ isOpen, onToggle, onClose }: MobileNavigation
 
       {/* Menu lateral mobile */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-background border-r border-border z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-0 left-0 h-full w-80 bg-background border-r border-border shadow-2xl transform transition-transform duration-300 ease-out z-50 md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
-        {/* Header do menu */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        {/* Header do menu mobile */}
+        <div className="flex items-center justify-between p-4 border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-1.5">
               <ColoSaudeLogo size="sm" />
@@ -131,8 +133,8 @@ export function MobileNavigation({ isOpen, onToggle, onClose }: MobileNavigation
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8"
-            aria-label="Fechar menu"
+            className="hover:bg-muted/80 transition-colors"
+            aria-label="Close mobile menu"
           >
             <X className="h-5 w-5" />
           </Button>
