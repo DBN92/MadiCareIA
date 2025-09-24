@@ -145,27 +145,32 @@ export class VitalSignsOCR {
   }
 
   /**
-   * Simulação para desenvolvimento (remove em produção)
+   * Simula OCR para testes - agora com dados da imagem Dräger
    */
   private async processWithSimulation(imageData: string): Promise<OCRResult> {
-    // Simular delay de processamento
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Gerar dados simulados realistas
-    const simulatedData: VitalSignsData = {
-      systolicBP: String(Math.floor(Math.random() * (140 - 110) + 110)),
-      diastolicBP: String(Math.floor(Math.random() * (90 - 70) + 70)),
-      heartRate: String(Math.floor(Math.random() * (100 - 60) + 60)),
-      temperature: (Math.random() * (37.5 - 36.0) + 36.0).toFixed(1),
-      oxygenSaturation: String(Math.floor(Math.random() * (100 - 95) + 95)),
-      respiratoryRate: String(Math.floor(Math.random() * (20 - 12) + 12)),
-      confidence: 0.85
-    }
-    
-    return {
-      success: true,
-      data: simulatedData,
-      confidence: 0.85
+    try {
+      // Simular delay de processamento
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Dados simulados baseados na imagem do monitor Dräger fornecida
+      const simulatedText = `
+        DRÄGER Infinity C500
+        STI 78 bpm
+        SpO2 92%
+        FRI 23 rpm
+        PNI 129/88 mmHg
+        Temp 36.5°C
+        Monitor de sinais vitais
+        Paciente: EDILENE MARIA BEZERRA
+        Leito 2
+      `
+      
+      return this.parseVitalSigns(simulatedText, 'simulation')
+    } catch (error) {
+      return {
+        success: false,
+        error: `Erro na simulação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+      }
     }
   }
 
@@ -179,38 +184,85 @@ export class VitalSignsOCR {
     // Normalizar texto
     const normalizedText = text.toLowerCase().replace(/[^\w\s\/\-\.]/g, ' ')
     
-    // Padrões regex para diferentes sinais vitais
+    // Padrões regex para diferentes sinais vitais - incluindo padrões Dräger
     const patterns = {
-      // Pressão arterial: 120/80, 120x80, PA: 120/80
-      bloodPressure: /(?:pa|press[aã]o|bp)[\s:]*(\d{2,3})[\s\/x\-](\d{2,3})|(\d{2,3})[\s\/x\-](\d{2,3})[\s]*(?:mmhg|pa)/gi,
+      // Pressão arterial: 120/80, 120x80, PA: 120/80, PNI 129/88
+      bloodPressure: /(?:pa|press[aã]o|bp|pni)[\s:]*(\d{2,3})[\s\/x\-](\d{2,3})|(\d{2,3})[\s\/x\-](\d{2,3})[\s]*(?:mmhg|pa)/gi,
       
-      // Frequência cardíaca: FC: 72, HR: 72, 72 bpm
-      heartRate: /(?:fc|hr|freq.*card|heart.*rate)[\s:]*(\d{2,3})|(\d{2,3})[\s]*(?:bpm|bat)/gi,
+      // Frequência cardíaca: FC: 72, HR: 72, 72 bpm, STI 78
+      heartRate: /(?:fc|hr|freq.*card|heart.*rate|sti)[\s:]*(\d{2,3})|(\d{2,3})[\s]*(?:bpm|bat)/gi,
       
       // Temperatura: T: 36.5, Temp: 36,5, 36.5°C
       temperature: /(?:t|temp|temperatura)[\s:]*(\d{2})[\.,](\d{1,2})|(\d{2})[\.,](\d{1,2})[\s]*[°c]/gi,
       
-      // Saturação: SpO2: 98, Sat: 98%, 98%
+      // Saturação: SpO2: 98, Sat: 98%, 98%, SpO2 92
       oxygenSaturation: /(?:spo2|sat|satura[çc][aã]o)[\s:]*(\d{2,3})|(\d{2,3})[\s]*%/gi,
       
-      // Frequência respiratória: FR: 16, RR: 16, 16 rpm
-      respiratoryRate: /(?:fr|rr|freq.*resp|resp.*rate)[\s:]*(\d{1,2})|(\d{1,2})[\s]*(?:rpm|resp)/gi
+      // Frequência respiratória: FR: 16, RR: 16, 16 rpm, FRI 23
+      respiratoryRate: /(?:fr|rr|freq.*resp|resp.*rate|fri)[\s:]*(\d{1,2})|(\d{1,2})[\s]*(?:rpm|resp)/gi
+    }
+
+    // Padrões específicos para monitores Dräger
+    const dragerPatterns = {
+      // STI (Frequência cardíaca Dräger)
+      stiHeartRate: /sti[\s]*(\d{2,3})/gi,
+      
+      // SpO2 com valor numérico grande (padrão Dräger)
+      dragerSpO2: /spo2[\s]*(\d{2,3})/gi,
+      
+      // FRI (Frequência respiratória Dräger)
+      friRespiratoryRate: /fri[\s]*(\d{1,2})/gi,
+      
+      // PNI (Pressão não invasiva Dräger)
+      pniBloodPressure: /pni[\s]*(\d{2,3})[\s\/](\d{2,3})/gi,
+      
+      // Padrão de números grandes isolados (como 78, 92, 23 na tela)
+      largeNumbers: /\b(\d{2,3})\b/g
     }
     
-    // Extrair pressão arterial
-    let match = patterns.bloodPressure.exec(normalizedText)
+    // Primeiro, tentar padrões específicos do Dräger
+    let match = dragerPatterns.stiHeartRate.exec(normalizedText)
     if (match) {
-      vitalSigns.systolicBP = match[1] || match[3]
-      vitalSigns.diastolicBP = match[2] || match[4]
-      confidence += 0.1
+      vitalSigns.heartRate = match[1]
+      confidence += 0.15
     }
     
-    // Extrair frequência cardíaca
-    patterns.heartRate.lastIndex = 0
-    match = patterns.heartRate.exec(normalizedText)
+    match = dragerPatterns.dragerSpO2.exec(normalizedText)
     if (match) {
-      vitalSigns.heartRate = match[1] || match[2]
-      confidence += 0.1
+      vitalSigns.oxygenSaturation = match[1]
+      confidence += 0.15
+    }
+    
+    match = dragerPatterns.friRespiratoryRate.exec(normalizedText)
+    if (match) {
+      vitalSigns.respiratoryRate = match[1]
+      confidence += 0.15
+    }
+    
+    match = dragerPatterns.pniBloodPressure.exec(normalizedText)
+    if (match) {
+      vitalSigns.systolicBP = match[1]
+      vitalSigns.diastolicBP = match[2]
+      confidence += 0.15
+    }
+    
+    // Se não encontrou com padrões Dräger, usar padrões gerais
+    if (!vitalSigns.systolicBP) {
+      match = patterns.bloodPressure.exec(normalizedText)
+      if (match) {
+        vitalSigns.systolicBP = match[1] || match[3]
+        vitalSigns.diastolicBP = match[2] || match[4]
+        confidence += 0.1
+      }
+    }
+    
+    if (!vitalSigns.heartRate) {
+      patterns.heartRate.lastIndex = 0
+      match = patterns.heartRate.exec(normalizedText)
+      if (match) {
+        vitalSigns.heartRate = match[1] || match[2]
+        confidence += 0.1
+      }
     }
     
     // Extrair temperatura
@@ -222,20 +274,65 @@ export class VitalSignsOCR {
       confidence += 0.1
     }
     
-    // Extrair saturação
-    patterns.oxygenSaturation.lastIndex = 0
-    match = patterns.oxygenSaturation.exec(normalizedText)
-    if (match) {
-      vitalSigns.oxygenSaturation = match[1] || match[2]
-      confidence += 0.1
+    // Extrair saturação se não foi encontrada com padrões Dräger
+    if (!vitalSigns.oxygenSaturation) {
+      patterns.oxygenSaturation.lastIndex = 0
+      match = patterns.oxygenSaturation.exec(normalizedText)
+      if (match) {
+        vitalSigns.oxygenSaturation = match[1] || match[2]
+        confidence += 0.1
+      }
     }
     
-    // Extrair frequência respiratória
-    patterns.respiratoryRate.lastIndex = 0
-    match = patterns.respiratoryRate.exec(normalizedText)
-    if (match) {
-      vitalSigns.respiratoryRate = match[1] || match[2]
-      confidence += 0.1
+    // Extrair frequência respiratória se não foi encontrada com padrões Dräger
+    if (!vitalSigns.respiratoryRate) {
+      patterns.respiratoryRate.lastIndex = 0
+      match = patterns.respiratoryRate.exec(normalizedText)
+      if (match) {
+        vitalSigns.respiratoryRate = match[1] || match[2]
+        confidence += 0.1
+      }
+    }
+    
+    // Fallback: tentar extrair números isolados se ainda não temos dados suficientes
+    if (Object.keys(vitalSigns).length < 2) {
+      const numbers = normalizedText.match(/\b(\d{2,3})\b/g)
+      if (numbers && numbers.length >= 3) {
+        // Heurística baseada na imagem: números grandes isolados
+        // 78 (FC), 92 (SpO2), 23 (FR), 129/88 (PA)
+        const sortedNumbers = numbers.map(n => parseInt(n)).sort((a, b) => b - a)
+        
+        // Tentar identificar por faixas típicas
+        for (const num of sortedNumbers) {
+          if (!vitalSigns.systolicBP && num >= 100 && num <= 200) {
+            // Procurar diastólica próxima
+            const diastolic = numbers.find(n => {
+              const val = parseInt(n)
+              return val >= 60 && val <= 100 && val < num
+            })
+            if (diastolic) {
+              vitalSigns.systolicBP = num.toString()
+              vitalSigns.diastolicBP = diastolic
+              confidence += 0.05
+            }
+          }
+          
+          if (!vitalSigns.oxygenSaturation && num >= 85 && num <= 100) {
+            vitalSigns.oxygenSaturation = num.toString()
+            confidence += 0.05
+          }
+          
+          if (!vitalSigns.heartRate && num >= 50 && num <= 150) {
+            vitalSigns.heartRate = num.toString()
+            confidence += 0.05
+          }
+          
+          if (!vitalSigns.respiratoryRate && num >= 10 && num <= 40) {
+            vitalSigns.respiratoryRate = num.toString()
+            confidence += 0.05
+          }
+        }
+      }
     }
     
     // Validar dados extraídos
