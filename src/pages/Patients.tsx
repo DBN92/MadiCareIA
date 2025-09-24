@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { usePatients } from "@/hooks/usePatients"
 import { useFamilyAccess, FamilyAccessToken, FamilyRole } from "@/hooks/useFamilyAccess"
 import { useToast } from "@/hooks/use-toast"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { PatientForm } from "@/components/PatientForm"
 import FamilyCredentialsModal from "@/components/FamilyCredentialsModal"
 import {
@@ -83,6 +84,7 @@ const Patients = () => {
   const { patients, loading, deletePatient, updatePatient, refetch } = usePatients()
   const { generateFamilyToken } = useFamilyAccess()
   const { toast } = useToast()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     setIsVisible(true)
@@ -753,45 +755,45 @@ const Patients = () => {
                 </div>
               </div>
               
-              <div className="bg-slate-50/80 rounded-xl p-4">
-                <Label className="text-slate-700 font-semibold mb-2 block">Data de Internação</Label>
-                <p className="text-slate-900 font-medium">
-                  {selectedPatient.admission_date 
-                    ? new Date(selectedPatient.admission_date).toLocaleDateString('pt-BR')
-                    : new Date(selectedPatient.created_at).toLocaleDateString('pt-BR')
-                  }
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-slate-900 mb-2">Observações Médicas</h4>
-                <div className="bg-gradient-to-r from-slate-50/80 to-slate-100/80 rounded-xl p-4 border border-slate-200/50">
-                  <p className="text-slate-800 leading-relaxed">{selectedPatient.notes || 'Nenhuma observação registrada no momento'}</p>
+                <div className="bg-slate-50/80 rounded-xl p-4">
+                  <Label className="text-slate-700 font-semibold mb-2 block">Data de Internação</Label>
+                  <p className="text-slate-900 font-medium">
+                    {selectedPatient.admission_date 
+                      ? new Date(selectedPatient.admission_date).toLocaleDateString('pt-BR')
+                      : new Date(selectedPatient.created_at).toLocaleDateString('pt-BR')
+                    }
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-semibold text-slate-900 mb-2">Observações Médicas</h4>
+                  <div className="bg-gradient-to-r from-slate-50/80 to-slate-100/80 rounded-xl p-4 border border-slate-200/50">
+                    <p className="text-slate-800 leading-relaxed">{selectedPatient.notes || 'Nenhuma observação registrada no momento'}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          <DialogFooter className="pt-6 border-t border-slate-200/50">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowViewModal(false)}
-              className="border-slate-300 bg-white/90 hover:bg-slate-50 hover:border-slate-400 text-slate-700 hover:text-slate-800"
-            >
-              Fechar
-            </Button>
-            <Button 
-              onClick={() => {
-                setShowViewModal(false)
-                handleEditPatient(selectedPatient)
-              }}
-              className="bg-gradient-to-r from-slate-400 to-slate-800 hover:from-slate-500 hover:to-slate-900 text-white"
-            >
-              Editar Paciente
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            )}
+            
+            <DialogFooter className="pt-6 border-t border-slate-200/50">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowViewModal(false)}
+                className="border-slate-300 bg-white/90 hover:bg-slate-50 hover:border-slate-400 text-slate-700 hover:text-slate-800"
+              >
+                Fechar
+              </Button>
+              <Button 
+                onClick={() => {
+                  setShowViewModal(false)
+                  handleEditPatient(selectedPatient)
+                }}
+                className="bg-gradient-to-r from-slate-400 to-slate-800 hover:from-slate-500 hover:to-slate-900 text-white"
+              >
+                Editar Paciente
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       {/* Patient Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>

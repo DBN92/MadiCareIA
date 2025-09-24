@@ -61,12 +61,12 @@ export function NotificationDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="relative scale-[0.85]">
+          <Bell className="h-4 w-4 sm:h-3 sm:w-3" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+              className="absolute -top-1 -right-1 sm:-top-0 sm:-right-0 h-6 w-6 sm:h-5 sm:w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold text-white border-2 border-background"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -74,7 +74,7 @@ export function NotificationDropdown({
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent className="w-72 sm:w-80 max-w-[90vw]" align="end" forceMount>
+      <DropdownMenuContent className="w-72 sm:w-80 max-w-[90vw] scale-[0.85]" align="end" forceMount>
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notificações</span>
           {unreadCount > 0 && (

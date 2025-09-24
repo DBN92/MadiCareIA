@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { FamilyLayout } from '@/components/FamilyLayout'
 import FamilyCare from '@/components/FamilyCare'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 import { useFamilyAccess, FamilyPermissions, FamilyAccessToken } from '@/hooks/useFamilyAccess'
 import { useCareEvents } from '@/hooks/useCareEvents'
@@ -28,6 +29,7 @@ const FamilyDashboard = () => {
   const { patientId, token } = useParams<{ patientId: string; token: string }>()
   const [searchParams] = useSearchParams()
   const location = window.location.pathname
+  const isMobile = useIsMobile()
   
   // Detectar view baseada na URL
   let currentView = searchParams.get('view') || 'dashboard'
@@ -205,59 +207,59 @@ const FamilyDashboard = () => {
       {/* Informações de Acesso */}
       {permissions && (
         <Card className="medical-card border-l-4 border-l-primary">
-          <CardHeader className="pb-3">
+          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
             <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Seu Nível de Acesso</CardTitle>
+              <Shield className={`text-primary ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'}`}>Seu Nível de Acesso</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-lg ${
+            <div className={`flex items-start ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <div className={`rounded-lg ${isMobile ? 'p-2' : 'p-3'} ${
                 permissions.canEdit 
                   ? 'bg-green-100 text-green-700' 
                   : 'bg-primary/10 text-primary border-primary/20'
               }`}>
                 {permissions.canEdit ? (
-                  <Edit className="h-6 w-6" />
+                  <Edit className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
                 ) : (
-                  <Eye className="h-6 w-6" />
+                  <Eye className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
                 )}
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-2">
+                <h3 className={`font-semibold mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
                   {permissions.canEdit ? 'Editor' : 'Visualizador'}
                 </h3>
-                <p className="text-muted-foreground mb-3">
+                <p className={`text-muted-foreground mb-3 ${isMobile ? 'text-sm' : ''}`}>
                   {permissions.canEdit 
                     ? 'Você pode visualizar todas as informações e registrar novos cuidados para o paciente.'
                     : 'Você pode visualizar todas as informações do paciente, mas não pode registrar novos cuidados.'
                   }
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                <div className={`grid gap-2 text-sm ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
                   <div className={`flex items-center gap-1 ${
                     permissions.canView ? 'text-green-600' : 'text-gray-400'
                   }`}>
                     <Eye className="h-3 w-3" />
-                    Visualizar
+                    <span className={`${isMobile ? 'text-xs' : ''}`}>Visualizar</span>
                   </div>
                   <div className={`flex items-center gap-1 ${
                     permissions.canRegisterLiquids ? 'text-green-600' : 'text-gray-400'
                   }`}>
                     <Droplets className="h-3 w-3" />
-                    Líquidos
+                    <span className={`${isMobile ? 'text-xs' : ''}`}>Líquidos</span>
                   </div>
                   <div className={`flex items-center gap-1 ${
                     permissions.canRegisterMedications ? 'text-green-600' : 'text-gray-400'
                   }`}>
                     <Pill className="h-3 w-3" />
-                    Medicamentos
+                    <span className={`${isMobile ? 'text-xs' : ''}`}>Medicamentos</span>
                   </div>
                   <div className={`flex items-center gap-1 ${
                     permissions.canRegisterMeals ? 'text-green-600' : 'text-gray-400'
                   }`}>
                     <Utensils className="h-3 w-3" />
-                    Refeições
+                    <span className={`${isMobile ? 'text-xs' : ''}`}>Refeições</span>
                   </div>
                 </div>
               </div>
@@ -267,78 +269,78 @@ const FamilyDashboard = () => {
       )}
 
       {/* Estatísticas Diárias */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
         <Card className="medical-card">
-          <CardHeader className="pb-3">
+          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Líquidos Hoje
+              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                {isMobile ? 'Líquidos' : 'Líquidos Hoje'}
               </CardTitle>
-              <Droplets className="h-4 w-4 text-primary" />
+              <Droplets className={`text-primary ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
               {todayStats.liquids}ml
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
               {todayEvents.filter(e => e.type === 'drink').length} registros
             </p>
           </CardContent>
         </Card>
 
         <Card className="medical-card">
-          <CardHeader className="pb-3">
+          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Medicamentos
+              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                {isMobile ? 'Medicamentos' : 'Medicamentos'}
               </CardTitle>
-              <Pill className="h-4 w-4 text-green-600" />
+              <Pill className={`text-green-600 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
               {todayStats.medications}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
               doses hoje
             </p>
           </CardContent>
         </Card>
 
         <Card className="medical-card">
-          <CardHeader className="pb-3">
+          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 Refeições
               </CardTitle>
-              <Utensils className="h-4 w-4 text-orange-600" />
+              <Utensils className={`text-orange-600 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
               {todayStats.meals}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
               refeições hoje
             </p>
           </CardContent>
         </Card>
 
         <Card className="medical-card">
-          <CardHeader className="pb-3">
+          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 Atividades
               </CardTitle>
-              <Activity className="h-4 w-4 text-purple-600" />
+              <Activity className={`text-purple-600 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">
+            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
               {todayEvents.length}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
               registros hoje
             </p>
           </CardContent>
@@ -348,20 +350,20 @@ const FamilyDashboard = () => {
       {/* Atividades Recentes */}
       <Card className="medical-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+          <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
+            <Clock className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
             Atividades Recentes
           </CardTitle>
-          <CardDescription>
+          <CardDescription className={`${isMobile ? 'text-sm' : ''}`}>
             Últimos registros de cuidados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
             {recentEvents.length === 0 ? (
-              <div className="text-center py-8">
-                <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
+              <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+                <Heart className={`text-muted-foreground mx-auto mb-4 ${isMobile ? 'h-10 w-10' : 'h-12 w-12'}`} />
+                <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>
                   Nenhuma atividade registrada ainda hoje.
                 </p>
               </div>
@@ -369,22 +371,22 @@ const FamilyDashboard = () => {
               recentEvents.map((event) => {
                 const IconComponent = getTypeIcon(event.type)
                 return (
-                  <div key={event.id} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                    <div className={`p-2 rounded-lg bg-background ${getTypeColor(event.type)}`}>
-                      <IconComponent className="h-4 w-4" />
+                  <div key={event.id} className={`flex items-center bg-muted/50 rounded-lg ${isMobile ? 'gap-3 p-2.5' : 'gap-4 p-3'}`}>
+                    <div className={`rounded-lg bg-background ${getTypeColor(event.type)} ${isMobile ? 'p-1.5' : 'p-2'}`}>
+                      <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium text-foreground ${isMobile ? 'text-sm' : ''}`}>
                         {getEventDescription(event)}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         {new Date(event.created_at).toLocaleTimeString('pt-BR', {
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
                       </p>
                     </div>
-                    <Badge className={getBadgeColor(event.type)}>
+                    <Badge className={`${getBadgeColor(event.type)} ${isMobile ? 'text-xs px-2 py-0.5' : ''}`}>
                       {getTypeLabel(event.type)}
                     </Badge>
                   </div>

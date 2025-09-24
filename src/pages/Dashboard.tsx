@@ -6,6 +6,7 @@ import { usePatients } from "@/hooks/usePatients"
 import { useCareEvents } from "@/hooks/useCareEvents"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { 
   Users, 
   Activity, 
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [isVisible, setIsVisible] = useState(false)
   const { patients, loading: patientsLoading } = usePatients()
   const { events, getTodayStats } = useCareEvents()
+  const isMobile = useIsMobile()
   
   useEffect(() => {
     setIsVisible(true)
@@ -282,46 +284,48 @@ const Dashboard = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5"></div>
           <CardHeader className="relative">
             <CardTitle className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-                <Activity className="h-5 w-5 text-white" />
+              <div className={`bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg ${isMobile ? 'p-1.5' : 'p-2'}`}>
+                <Activity className={`text-white ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
               </div>
               <div>
-                <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                <span className={`font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent ${isMobile ? 'text-lg' : 'text-xl'}`}>
                   Ações Rápidas
                 </span>
               </div>
             </CardTitle>
-            <CardDescription className="text-muted-foreground">
+            <CardDescription className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>
               Registros frequentes de cuidados
             </CardDescription>
           </CardHeader>
-          <CardContent className="relative space-y-4">
+          <CardContent className={`relative ${isMobile ? 'space-y-3' : 'space-y-4'}`}>
             {[
-              { icon: Droplets, label: "Registrar Líquidos", color: "from-blue-500 to-cyan-500", bgColor: "bg-blue-500/10" },
-              { icon: Pill, label: "Administrar Medicamento", color: "from-purple-500 to-pink-500", bgColor: "bg-purple-500/10" },
-              { icon: Heart, label: "Verificar Sinais Vitais", color: "from-red-500 to-rose-500", bgColor: "bg-red-500/10" },
-              { icon: Activity, label: "Débito de Dreno", color: "from-emerald-500 to-teal-500", bgColor: "bg-emerald-500/10" }
+              { icon: Droplets, label: "Registrar Líquidos", shortLabel: "Líquidos", color: "from-blue-500 to-cyan-500", bgColor: "bg-blue-500/10" },
+              { icon: Pill, label: "Administrar Medicamento", shortLabel: "Medicamentos", color: "from-purple-500 to-pink-500", bgColor: "bg-purple-500/10" },
+              { icon: Heart, label: "Verificar Sinais Vitais", shortLabel: "Sinais Vitais", color: "from-red-500 to-rose-500", bgColor: "bg-red-500/10" },
+              { icon: Activity, label: "Débito de Dreno", shortLabel: "Dreno", color: "from-emerald-500 to-teal-500", bgColor: "bg-emerald-500/10" }
             ].map((action, index) => (
               <Button 
                 key={index}
                 variant="outline" 
-                className="w-full justify-start text-left h-auto p-4 group/action hover:scale-[1.02] transition-all duration-300 border-border/50 hover:border-transparent hover:shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm"
+                className={`w-full justify-start text-left group/action hover:scale-[1.02] transition-all duration-300 border-border/50 hover:border-transparent hover:shadow-lg bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm ${isMobile ? 'h-auto p-3' : 'h-auto p-4'}`}
                 onClick={() => navigate('/care')}
                 style={{
                   animationDelay: `${(index + 7) * 100}ms`,
                   animation: isVisible ? 'slideInRight 0.6s ease-out forwards' : 'none'
                 }}
               >
-                <div className="flex items-center gap-4 w-full">
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${action.color} shadow-lg group-hover/action:scale-110 group-hover/action:rotate-6 transition-all duration-300`}>
-                    <action.icon className="h-5 w-5 text-white" />
+                <div className={`flex items-center w-full ${isMobile ? 'gap-3' : 'gap-4'}`}>
+                  <div className={`rounded-xl bg-gradient-to-br ${action.color} shadow-lg group-hover/action:scale-110 group-hover/action:rotate-6 transition-all duration-300 ${isMobile ? 'p-2' : 'p-3'}`}>
+                    <action.icon className={`text-white ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                   </div>
-                  <div className="flex-1">
-                    <span className="font-medium text-foreground group-hover/action:text-blue-600 dark:group-hover/action:text-blue-400 transition-colors duration-300">
-                      {action.label}
+                  <div className="flex-1 min-w-0">
+                    <span className={`font-medium text-foreground group-hover/action:text-blue-600 dark:group-hover/action:text-blue-400 transition-colors duration-300 ${isMobile ? 'text-sm' : ''}`}>
+                      {isMobile ? action.shortLabel : action.label}
                     </span>
                   </div>
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover/action:text-blue-500 group-hover/action:translate-x-1 group-hover/action:-translate-y-1 transition-all duration-300" />
+                  {!isMobile && (
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover/action:text-blue-500 group-hover/action:translate-x-1 group-hover/action:-translate-y-1 transition-all duration-300" />
+                  )}
                 </div>
               </Button>
             ))}
