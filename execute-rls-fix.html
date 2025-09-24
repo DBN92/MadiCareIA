@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correção RLS - MediCare</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e74c3c;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .error-box {
+            background: #ffebee;
+            border: 1px solid #e74c3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .solution-box {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .sql-code {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .steps {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .copy-btn {
+            background: #28a745;
+        }
+        .copy-btn:hover {
+            background: #1e7e34;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Correção do Erro RLS - MediCare</h1>
+        
+        <div class="error-box">
+            <h3>❌ Erros Identificados:</h3>
+            <p><strong>Erro 1 - Código:</strong> 42501</p>
+            <p><strong>Mensagem:</strong> "new row violates row-level security policy for table 'profiles'"</p>
+            <p><strong>Erro 2 - Código:</strong> 42710</p>
+            <p><strong>Mensagem:</strong> "policy already exists"</p>
+            <p><strong>Causa:</strong> Políticas RLS duplicadas e com recursão infinita na tabela profiles</p>
+        </div>
+
+        <div class="solution-box">
+            <h3>✅ Solução Disponível:</h3>
+            <p>Execute o script SQL abaixo no <strong>Supabase Dashboard > SQL Editor</strong> para corrigir o problema.</p>
+        </div>
+
+        <div class="steps">
+            <h3>📋 Passos para Resolver (ATUALIZADO):</h3>
+            <div class="step">
+                <strong>1.</strong> Acesse o Supabase Dashboard do seu projeto
+            </div>
+            <div class="step">
+                <strong>2.</strong> Vá para <strong>SQL Editor</strong>
+            </div>
+            <div class="step">
+                <strong>3.</strong> PRIMEIRO: Execute o script de limpeza abaixo (clean-rls-policies.sql)
+            </div>
+            <div class="step">
+                <strong>4.</strong> DEPOIS: Execute o script de correção (fix-rls-recursion.sql)
+            </div>
+            <div class="step">
+                <strong>5.</strong> Teste a criação de usuários na aplicação
+            </div>
+        </div>
+
+        <h3>🧹 PASSO 1: Script de Limpeza (Execute PRIMEIRO):</h3>
+        <button class="copy-btn" onclick="copyCleanSQL()">📋 Copiar Script de Limpeza</button>
+        
+        <div class="sql-code" id="cleanSqlScript">-- Script para limpar todas as políticas RLS existentes da tabela profiles
+-- Execute este script PRIMEIRO no SQL Editor do Supabase Dashboard
+
+-- 1. Remover TODAS as políticas existentes da tabela profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON profiles;
+DROP POLICY IF EXISTS "Admins can manage all profiles" ON profiles;
+DROP POLICY IF EXISTS "Service role can manage all profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can view profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can update profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can create profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow profile creation" ON profiles;
+DROP POLICY IF EXISTS "Users can view own profile, admins view all" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile, admins update all" ON profiles;
+DROP POLICY IF EXISTS "Allow profile creation without recursion" ON profiles;
+DROP POLICY IF EXISTS "Only admins can delete profiles" ON profiles;
+
+-- 2. Remover função auxiliar se existir
+DROP FUNCTION IF EXISTS public.is_user_admin(UUID);
+DROP FUNCTION IF EXISTS public.is_admin(UUID);
+
+-- 3. Verificar se RLS está habilitado (deve estar)
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+SELECT 'Políticas RLS limpas com sucesso! Agora execute o script fix-rls-recursion.sql' as status;</div>
+        
+        <h3>🔧 PASSO 2: Script de Correção (Execute DEPOIS):</h3>
+        <button class="copy-btn" onclick="copySQL()">📋 Copiar Script de Correção</button>
+        
+        <div class="sql-code" id="sqlScript">-- Script para corrigir recursão infinita nas políticas RLS da tabela profiles
+
+-- 1. Remover todas as políticas problemáticas que causam recursão
+DROP POLICY IF EXISTS "Users can view profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can update profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can create profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can delete profiles" ON profiles;
+DROP POLICY IF EXISTS "Allow profile creation" ON profiles;
+
+-- 2. Criar função auxiliar para verificar se usuário é admin (sem recursão)
+-- Esta função usa SECURITY DEFINER para contornar as políticas RLS
+CREATE OR REPLACE FUNCTION public.is_user_admin(user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN AS $$
+DECLARE
+  user_role TEXT;
+BEGIN
+  -- Usar SECURITY DEFINER permite contornar RLS temporariamente
+  SELECT role INTO user_role 
+  FROM profiles 
+  WHERE id = user_id;
+  
+  RETURN COALESCE(user_role = 'admin', false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. Criar políticas RLS sem recursão usando a função auxiliar
+
+-- Política para visualização: usuários veem próprio profile, admins veem todos
+CREATE POLICY "Users can view own profile, admins view all" ON profiles
+  FOR SELECT USING (
+    auth.uid() = id OR 
+    public.is_user_admin(auth.uid()) OR
+    current_setting('role') = 'service_role'
+  );
+
+-- Política para atualização: usuários atualizam próprio profile, admins atualizam todos
+CREATE POLICY "Users can update own profile, admins update all" ON profiles
+  FOR UPDATE USING (
+    auth.uid() = id OR 
+    public.is_user_admin(auth.uid()) OR
+    current_setting('role') = 'service_role'
+  );
+
+-- Política para inserção: usuários autenticados podem criar próprio profile, admins podem criar qualquer profile
+CREATE POLICY "Allow profile creation without recursion" ON profiles
+  FOR INSERT WITH CHECK (
+    auth.uid() = id OR 
+    public.is_user_admin(auth.uid()) OR
+    current_setting('role') = 'service_role'
+  );
+
+-- Política para deleção: apenas admins e service role podem deletar
+CREATE POLICY "Only admins can delete profiles" ON profiles
+  FOR DELETE USING (
+    public.is_user_admin(auth.uid()) OR
+    current_setting('role') = 'service_role'
+  );
+
+-- 4. Garantir que a função handle_new_user ainda funciona
+-- Recriar a função com SECURITY DEFINER para contornar RLS durante inserção automática
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'nurse')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;</div>
+
+        <div class="solution-box">
+            <h3>🎯 Após Executar o Script:</h3>
+            <ul>
+                <li>✅ Criação de usuários funcionará normalmente</li>
+                <li>✅ Não haverá mais erro de RLS</li>
+                <li>✅ Permissões continuarão funcionando corretamente</li>
+                <li>✅ Admins poderão gerenciar todos os usuários</li>
+                <li>✅ Usuários comuns verão apenas seus próprios dados</li>
+            </ul>
+        </div>
+
+        <div class="steps">
+            <h3>🧪 Teste Após a Correção:</h3>
+            <div class="step">
+                <strong>1.</strong> Tente criar um novo usuário na interface
+            </div>
+            <div class="step">
+                <strong>2.</strong> Verifique se a lista de usuários carrega sem erro
+            </div>
+            <div class="step">
+                <strong>3.</strong> Confirme que as permissões funcionam corretamente
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyCleanSQL() {
+            const cleanSqlText = document.getElementById('cleanSqlScript').textContent;
+            navigator.clipboard.writeText(cleanSqlText).then(function() {
+                alert('✅ Script de Limpeza copiado!\n\nExecute este script PRIMEIRO no Supabase Dashboard.');
+            }, function(err) {
+                console.error('Erro ao copiar: ', err);
+                alert('❌ Erro ao copiar. Selecione manualmente o texto e copie.');
+            });
+        }
+
+        function copySQL() {
+            const sqlText = document.getElementById('sqlScript').textContent;
+            navigator.clipboard.writeText(sqlText).then(function() {
+                alert('✅ Script de Correção copiado!\n\nExecute este script DEPOIS do script de limpeza no Supabase Dashboard.');
+            }, function(err) {
+                console.error('Erro ao copiar: ', err);
+                alert('❌ Erro ao copiar. Selecione manualmente o texto e copie.');
+            });
+        }
+    </script>
+</body>
+</html>

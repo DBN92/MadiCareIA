@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, Clock, User, Activity, FileText, Pill } from 'lucide-react'
+import { Bell, Check, CheckCheck, Clock, User, Activity, FileText, Pill, MapPin, Navigation, CheckCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -38,6 +38,14 @@ export function NotificationDropdown({
         return <Activity className="h-4 w-4 text-red-500" />
       case 'medication':
         return <Pill className="h-4 w-4 text-purple-500" />
+      case 'check_in':
+        return <CheckCircle className="h-4 w-4 text-green-600" />
+      case 'check_out':
+        return <Clock className="h-4 w-4 text-blue-600" />
+      case 'navigation':
+        return <Navigation className="h-4 w-4 text-purple-600" />
+      case 'location_alert':
+        return <AlertCircle className="h-4 w-4 text-red-600" />
       default:
         return <FileText className="h-4 w-4 text-gray-500" />
     }

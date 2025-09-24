@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Exibição de Fotos - MediCare</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            background: #f9f9f9;
+        }
+        
+        .test-section h2 {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .photo-test {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .photo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            min-width: 200px;
+        }
+        
+        .photo-container {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #e0e0e0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+        }
+        
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-fallback {
+            width: 40px;
+            height: 40px;
+            background: #ccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-controls {
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn.secondary {
+            background: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background: #545b62;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-entry.error {
+            color: #dc3545;
+        }
+        
+        .log-entry.success {
+            color: #28a745;
+        }
+        
+        .log-entry.info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Teste de Exibição de Fotos</h1>
+        
+        <div class="test-section">
+            <h2>1. Teste de Foto de Perfil do Usuário</h2>
+            <div class="test-controls">
+                <button class="btn" onclick="testUserProfilePhoto()">Testar Foto de Perfil</button>
+                <button class="btn secondary" onclick="simulateUserPhoto()">Simular Foto de Usuário</button>
+                <button class="btn secondary" onclick="clearUserPhoto()">Limpar Foto de Usuário</button>
+            </div>
+            <div class="photo-test" id="userPhotoTest">
+                <!-- Fotos de usuário serão exibidas aqui -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. Teste de Foto de Paciente</h2>
+            <div class="test-controls">
+                <button class="btn" onclick="testPatientPhotos()">Testar Fotos de Pacientes</button>
+                <button class="btn secondary" onclick="simulatePatientPhotos()">Simular Fotos de Pacientes</button>
+                <button class="btn secondary" onclick="clearPatientPhotos()">Limpar Fotos de Pacientes</button>
+            </div>
+            <div class="photo-test" id="patientPhotoTest">
+                <!-- Fotos de pacientes serão exibidas aqui -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. Teste de URLs de Imagem</h2>
+            <div class="test-controls">
+                <button class="btn" onclick="testImageUrls()">Testar URLs de Imagem</button>
+                <button class="btn secondary" onclick="testBase64Images()">Testar Imagens Base64</button>
+            </div>
+            <div class="photo-test" id="imageUrlTest">
+                <!-- Teste de URLs será exibido aqui -->
+            </div>
+        </div>
+        
+        <div class="log" id="testLog">
+            <div class="log-entry info">Sistema de teste iniciado...</div>
+        </div>
+    </div>
+
+    <script>
+        // Função para adicionar log
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('testLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Função para criar elemento de foto
+        function createPhotoElement(src, label, fallbackText = 'U') {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            
+            const photoContainer = document.createElement('div');
+            photoContainer.className = 'photo-container';
+            
+            if (src) {
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = label;
+                
+                img.onload = function() {
+                    addLog(`✅ Imagem carregada com sucesso: ${label}`, 'success');
+                    updateStatus(photoItem, 'success', 'Carregada');
+                };
+                
+                img.onerror = function() {
+                    addLog(`❌ Erro ao carregar imagem: ${label}`, 'error');
+                    updateStatus(photoItem, 'error', 'Erro');
+                    // Mostrar fallback
+                    photoContainer.innerHTML = `<div class="photo-fallback">${fallbackText}</div>`;
+                };
+                
+                photoContainer.appendChild(img);
+            } else {
+                photoContainer.innerHTML = `<div class="photo-fallback">${fallbackText}</div>`;
+                updateStatus(photoItem, 'error', 'Sem foto');
+            }
+            
+            const labelElement = document.createElement('div');
+            labelElement.textContent = label;
+            labelElement.style.fontWeight = 'bold';
+            labelElement.style.textAlign = 'center';
+            
+            photoItem.appendChild(photoContainer);
+            photoItem.appendChild(labelElement);
+            
+            return photoItem;
+        }
+
+        // Função para atualizar status
+        function updateStatus(photoItem, type, text) {
+            let statusElement = photoItem.querySelector('.status');
+            if (!statusElement) {
+                statusElement = document.createElement('div');
+                statusElement.className = 'status';
+                photoItem.appendChild(statusElement);
+            }
+            statusElement.className = `status ${type}`;
+            statusElement.textContent = text;
+        }
+
+        // Teste de foto de perfil do usuário
+        function testUserProfilePhoto() {
+            addLog('Testando foto de perfil do usuário...', 'info');
+            const container = document.getElementById('userPhotoTest');
+            container.innerHTML = '';
+            
+            // Verificar localStorage
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    const photoElement = createPhotoElement(
+                        user.profilePhoto, 
+                        `${user.name || 'Usuário'} (${user.email || 'N/A'})`,
+                        user.name ? user.name.charAt(0) : 'U'
+                    );
+                    container.appendChild(photoElement);
+                    
+                    if (user.profilePhoto) {
+                        addLog(`Foto de perfil encontrada no localStorage`, 'info');
+                    } else {
+                        addLog(`Nenhuma foto de perfil encontrada no localStorage`, 'error');
+                    }
+                } catch (error) {
+                    addLog(`Erro ao ler dados do usuário: ${error.message}`, 'error');
+                }
+            } else {
+                addLog('Nenhum usuário logado encontrado', 'error');
+                const photoElement = createPhotoElement(null, 'Usuário não logado', 'U');
+                container.appendChild(photoElement);
+            }
+        }
+
+        // Simular foto de usuário
+        function simulateUserPhoto() {
+            addLog('Simulando foto de usuário...', 'info');
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    // Simular uma foto base64 pequena (pixel azul)
+                    user.profilePhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77zgAAAABJRU5ErkJggg==';
+                    localStorage.setItem('user', JSON.stringify(user));
+                    addLog('Foto de usuário simulada adicionada', 'success');
+                    testUserProfilePhoto();
+                } catch (error) {
+                    addLog(`Erro ao simular foto: ${error.message}`, 'error');
+                }
+            } else {
+                addLog('Nenhum usuário logado para simular foto', 'error');
+            }
+        }
+
+        // Limpar foto de usuário
+        function clearUserPhoto() {
+            addLog('Limpando foto de usuário...', 'info');
+            const userData = localStorage.getItem('user');
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    delete user.profilePhoto;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    addLog('Foto de usuário removida', 'success');
+                    testUserProfilePhoto();
+                } catch (error) {
+                    addLog(`Erro ao limpar foto: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Teste de fotos de pacientes
+        function testPatientPhotos() {
+            addLog('Testando fotos de pacientes...', 'info');
+            const container = document.getElementById('patientPhotoTest');
+            container.innerHTML = '';
+            
+            // Verificar localStorage para pacientes
+            const patientsData = localStorage.getItem('patients');
+            if (patientsData) {
+                try {
+                    const patients = JSON.parse(patientsData);
+                    if (Array.isArray(patients) && patients.length > 0) {
+                        patients.slice(0, 5).forEach(patient => { // Mostrar apenas os primeiros 5
+                            const photoElement = createPhotoElement(
+                                patient.photo, 
+                                patient.full_name || 'Paciente',
+                                patient.full_name ? patient.full_name.charAt(0) : 'P'
+                            );
+                            container.appendChild(photoElement);
+                        });
+                        addLog(`${patients.length} pacientes encontrados`, 'info');
+                    } else {
+                        addLog('Nenhum paciente encontrado', 'error');
+                        const photoElement = createPhotoElement(null, 'Nenhum paciente', 'P');
+                        container.appendChild(photoElement);
+                    }
+                } catch (error) {
+                    addLog(`Erro ao ler dados dos pacientes: ${error.message}`, 'error');
+                }
+            } else {
+                addLog('Nenhum dado de paciente encontrado no localStorage', 'error');
+                const photoElement = createPhotoElement(null, 'Sem dados', 'P');
+                container.appendChild(photoElement);
+            }
+        }
+
+        // Simular fotos de pacientes
+        function simulatePatientPhotos() {
+            addLog('Simulando fotos de pacientes...', 'info');
+            const samplePatients = [
+                { id: '1', full_name: 'João Silva', photo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==' },
+                { id: '2', full_name: 'Maria Santos', photo: null },
+                { id: '3', full_name: 'Pedro Costa', photo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }
+            ];
+            
+            localStorage.setItem('patients', JSON.stringify(samplePatients));
+            addLog('Pacientes simulados adicionados', 'success');
+            testPatientPhotos();
+        }
+
+        // Limpar fotos de pacientes
+        function clearPatientPhotos() {
+            addLog('Limpando dados de pacientes...', 'info');
+            localStorage.removeItem('patients');
+            addLog('Dados de pacientes removidos', 'success');
+            testPatientPhotos();
+        }
+
+        // Teste de URLs de imagem
+        function testImageUrls() {
+            addLog('Testando URLs de imagem...', 'info');
+            const container = document.getElementById('imageUrlTest');
+            container.innerHTML = '';
+            
+            const testUrls = [
+                { url: 'https://via.placeholder.com/80x80/007bff/ffffff?text=OK', label: 'Placeholder Azul' },
+                { url: 'https://via.placeholder.com/80x80/28a745/ffffff?text=OK', label: 'Placeholder Verde' },
+                { url: 'https://invalid-url-test.com/image.jpg', label: 'URL Inválida' },
+                { url: '', label: 'URL Vazia' }
+            ];
+            
+            testUrls.forEach(test => {
+                const photoElement = createPhotoElement(test.url, test.label, 'T');
+                container.appendChild(photoElement);
+            });
+        }
+
+        // Teste de imagens Base64
+        function testBase64Images() {
+            addLog('Testando imagens Base64...', 'info');
+            const container = document.getElementById('imageUrlTest');
+            container.innerHTML = '';
+            
+            const testImages = [
+                { 
+                    src: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAI9jU77zgAAAABJRU5ErkJggg==', 
+                    label: 'Base64 Válido (Azul)' 
+                },
+                { 
+                    src: 'data:image/png;base64,invalid-base64-data', 
+                    label: 'Base64 Inválido' 
+                },
+                { 
+                    src: 'data:image/jpeg;base64,', 
+                    label: 'Base64 Vazio' 
+                }
+            ];
+            
+            testImages.forEach(test => {
+                const photoElement = createPhotoElement(test.src, test.label, 'B');
+                container.appendChild(photoElement);
+            });
+        }
+
+        // Inicializar testes
+        window.onload = function() {
+            addLog('Página de teste carregada', 'success');
+            addLog('Clique nos botões para executar os testes', 'info');
+        };
+    </script>
+</body>
+</html>

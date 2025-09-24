@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client'
 
 export interface Notification {
   id: string
-  type: 'patient_update' | 'care_record' | 'vital_signs' | 'medication'
+  type: 'patient_update' | 'care_record' | 'vital_signs' | 'medication' | 'check_in' | 'check_out' | 'navigation' | 'location_alert'
   title: string
   message: string
   patientName: string

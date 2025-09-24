@@ -2,8 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ImportExportModal } from "@/components/ImportExportModal"
+import { CheckinPanel } from "@/components/CheckinPanel"
 import { usePatients } from "@/hooks/usePatients"
 import { useCareEvents } from "@/hooks/useCareEvents"
+import { useAuth } from "@/contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -18,11 +20,13 @@ import {
   Pill,
   Database,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  MapPin
 } from "lucide-react"
 
 const Dashboard = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [showImportExport, setShowImportExport] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
@@ -37,6 +41,9 @@ const Dashboard = () => {
   const todayStats = getTodayStats()
   const activePatientsCount = patients.length
   const criticalPatients = patients.filter(p => p.notes?.toLowerCase().includes('crítico')).length
+
+  // Verificar se o usuário é médico ou enfermeira para mostrar o painel de check-in
+  const showCheckinPanel = user?.role === 'doctor' || user?.role === 'nurse'
 
   const stats = [
     {
@@ -332,6 +339,22 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Check-in Panel - Apenas para médicos e enfermeiras */}
+      {showCheckinPanel && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Sistema de Check-in/Check-out
+            </h2>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              {user?.role === 'doctor' ? 'Médico' : 'Enfermeira'}
+            </Badge>
+          </div>
+          <CheckinPanel />
+        </div>
+      )}
 
       {/* Import/Export Modal */}
       <ImportExportModal 

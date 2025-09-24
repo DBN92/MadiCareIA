@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Acesso Direto - MediCare</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+        .button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        .button.secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        .button.secondary:hover {
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        .url-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .credentials {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border: 1px solid #c3e6cb;
+        }
+        .credentials strong {
+            color: #155724;
+        }
+        .copy-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Teste de Acesso Direto</h1>
+            <p>Verificação do sistema de acesso familiar sem login</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h3>📋 1. Gerar Credenciais de Teste</h3>
+                <p>Primeiro, vamos criar credenciais de teste para simular o acesso familiar:</p>
+                <button class="button" onclick="generateTestCredentials()">Gerar Credenciais</button>
+                <div id="credentials-result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>🔗 2. Testar Acesso Direto</h3>
+                <p>Teste o acesso direto usando a URL gerada (sem necessidade de login):</p>
+                <button class="button secondary" onclick="testDirectAccess()" id="test-btn" disabled>Testar Acesso Direto</button>
+                <div id="access-result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>📊 3. Verificar Status</h3>
+                <p>Status atual do teste:</p>
+                <div id="status-result">
+                    <div class="status info">Aguardando geração de credenciais...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FAMILY_TOKENS_KEY = 'bedside_family_tokens';
+        let currentPatientId = null;
+        let currentToken = null;
+
+        function generateTestCredentials() {
+            const resultDiv = document.getElementById('credentials-result');
+            const statusDiv = document.getElementById('status-result');
+            const testBtn = document.getElementById('test-btn');
+            
+            try {
+                // Gerar dados de teste
+                currentPatientId = 'test-patient-' + Date.now();
+                currentToken = 'test-token-' + Math.random().toString(36).substr(2, 9);
+                
+                const testCredentials = {
+                    id: 'test-id-' + Date.now(),
+                    patient_id: currentPatientId,
+                    token: currentToken,
+                    username: 'familia_teste',
+                    password: 'senha123',
+                    role: 'editor',
+                    is_active: true,
+                    created_at: new Date().toISOString()
+                };
+
+                // Salvar no localStorage
+                const existingTokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+                existingTokens.push(testCredentials);
+                localStorage.setItem(FAMILY_TOKENS_KEY, JSON.stringify(existingTokens));
+
+                // Mostrar resultado
+                resultDiv.innerHTML = `
+                    <div class="status success">✅ Credenciais geradas com sucesso!</div>
+                    <div class="credentials">
+                        <strong>Paciente ID:</strong> ${currentPatientId}<br>
+                        <strong>Token:</strong> ${currentToken}<br>
+                        <strong>Usuário:</strong> ${testCredentials.username}<br>
+                        <strong>Senha:</strong> ${testCredentials.password}
+                    </div>
+                `;
+
+                statusDiv.innerHTML = `
+                    <div class="status success">Credenciais prontas para teste</div>
+                `;
+
+                testBtn.disabled = false;
+                testBtn.textContent = 'Testar Acesso Direto';
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao gerar credenciais: ${error.message}</div>
+                `;
+                statusDiv.innerHTML = `
+                    <div class="status error">Erro na geração de credenciais</div>
+                `;
+            }
+        }
+
+        function testDirectAccess() {
+            const resultDiv = document.getElementById('access-result');
+            const statusDiv = document.getElementById('status-result');
+            
+            if (!currentPatientId || !currentToken) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Primeiro gere as credenciais de teste!</div>
+                `;
+                return;
+            }
+
+            try {
+                // Gerar URLs de teste
+                const dashboardUrl = `http://localhost:8080/family/${currentPatientId}/${currentToken}`;
+                const dashboardUrlExplicit = `http://localhost:8080/family/${currentPatientId}/${currentToken}/dashboard`;
+                const careUrl = `http://localhost:8080/family/${currentPatientId}/${currentToken}/care`;
+
+                resultDiv.innerHTML = `
+                    <div class="status success">✅ URLs de acesso direto geradas!</div>
+                    
+                    <h4>🏠 Dashboard Principal:</h4>
+                    <div class="url-display">${dashboardUrl}</div>
+                    <a href="${dashboardUrl}" target="_blank" class="button">Abrir Dashboard</a>
+                    <button class="copy-btn" onclick="copyToClipboard('${dashboardUrl}')">Copiar</button>
+                    
+                    <h4>📊 Dashboard Explícito:</h4>
+                    <div class="url-display">${dashboardUrlExplicit}</div>
+                    <a href="${dashboardUrlExplicit}" target="_blank" class="button">Abrir Dashboard</a>
+                    <button class="copy-btn" onclick="copyToClipboard('${dashboardUrlExplicit}')">Copiar</button>
+                    
+                    <h4>🏥 Tela de Cuidados:</h4>
+                    <div class="url-display">${careUrl}</div>
+                    <a href="${careUrl}" target="_blank" class="button secondary">Abrir Cuidados</a>
+                    <button class="copy-btn" onclick="copyToClipboard('${careUrl}')">Copiar</button>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px;">
+                        <strong>📝 Instruções:</strong><br>
+                        1. Clique em qualquer botão "Abrir" acima<br>
+                        2. Se funcionar corretamente, você deve ver o dashboard sem precisar fazer login<br>
+                        3. Se pedir login/senha, o problema ainda persiste
+                    </div>
+                `;
+
+                statusDiv.innerHTML = `
+                    <div class="status info">Teste em andamento - clique nos links acima</div>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao gerar URLs: ${error.message}</div>
+                `;
+                statusDiv.innerHTML = `
+                    <div class="status error">Erro no teste de acesso</div>
+                `;
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Feedback visual temporário
+                event.target.textContent = 'Copiado!';
+                setTimeout(() => {
+                    event.target.textContent = 'Copiar';
+                }, 2000);
+            }).catch(err => {
+                console.error('Erro ao copiar:', err);
+            });
+        }
+
+        // Verificar se já existem credenciais ao carregar
+        window.onload = function() {
+            const existingTokens = JSON.parse(localStorage.getItem(FAMILY_TOKENS_KEY) || '[]');
+            if (existingTokens.length > 0) {
+                const lastToken = existingTokens[existingTokens.length - 1];
+                if (lastToken.patient_id.startsWith('test-patient')) {
+                    currentPatientId = lastToken.patient_id;
+                    currentToken = lastToken.token;
+                    document.getElementById('test-btn').disabled = false;
+                    document.getElementById('status-result').innerHTML = `
+                        <div class="status info">Credenciais de teste encontradas - pronto para testar</div>
+                    `;
+                }
+            }
+        };
+    </script>
+</body>
+</html>
