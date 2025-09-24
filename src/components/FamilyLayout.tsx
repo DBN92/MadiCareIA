@@ -56,8 +56,16 @@ export const FamilyLayout = ({ children, patient, permissions, currentPage }: Fa
           <div className="flex items-center justify-between">
             {/* Patient Info - Always Visible */}
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                {patient.photo ? (
+                  <img 
+                    src={patient.photo} 
+                    alt={patient.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-blue-600" />
+                )}
               </div>
               <div className="min-w-0">
                 <h1 className="text-sm font-semibold text-gray-900 truncate">

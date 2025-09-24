@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ interface CareEvent {
 const FamilyDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { patientId, token: urlToken } = useParams<{ patientId: string; token: string }>();
   const { validateTokenWithData, getPermissions } = useFamilyAccess();
   const { events, loading: eventsLoading } = useCareEvents();
   
@@ -54,15 +55,13 @@ const FamilyDashboard: React.FC = () => {
   useEffect(() => {
     const validateAccess = async () => {
       try {
-        const storedToken = localStorage.getItem('family_token');
-        const storedPatientId = localStorage.getItem('family_patient_id');
-        
-        if (!storedToken || !storedPatientId) {
+        // Usar parâmetros da URL em vez de localStorage
+        if (!patientId || !urlToken) {
           navigate('/family/login');
           return;
         }
 
-        const result = await validateTokenWithData(storedPatientId, storedToken);
+        const result = await validateTokenWithData(patientId, urlToken);
         if (!result.isValid || !result.patient || !result.tokenData) {
           navigate('/family/login');
           return;
@@ -80,7 +79,7 @@ const FamilyDashboard: React.FC = () => {
     };
 
     validateAccess();
-  }, [navigate, validateTokenWithData]);
+  }, [navigate, validateTokenWithData, patientId, urlToken]);
 
   // Helper functions
   const getTypeIcon = (type: string) => {
@@ -198,7 +197,17 @@ const FamilyDashboard: React.FC = () => {
       <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <User className="h-6 w-6" />
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+              {patient.photo ? (
+                <img 
+                  src={patient.photo} 
+                  alt={patient.full_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="h-6 w-6 text-white" />
+              )}
+            </div>
             <div>
               <h2 className="text-lg font-semibold">{patient.full_name}</h2>
               <p className="text-blue-100 text-sm">
@@ -339,7 +348,17 @@ const FamilyDashboard: React.FC = () => {
       <Card className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <Activity className="h-6 w-6" />
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
+              {patient.photo ? (
+                <img 
+                  src={patient.photo} 
+                  alt={patient.full_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Activity className="h-6 w-6 text-white" />
+              )}
+            </div>
             <div>
               <h2 className="text-lg font-semibold">{patient.full_name}</h2>
               <p className="text-green-100 text-sm">Registrar Cuidados</p>
