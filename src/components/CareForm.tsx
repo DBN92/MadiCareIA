@@ -968,6 +968,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
       isOpen={isCameraOpen}
       onClose={() => setIsCameraOpen(false)}
       onDataExtracted={handleCameraDataExtracted}
+      patientId={patientId}
     />
   </>
   )

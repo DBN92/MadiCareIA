@@ -1,4 +1,5 @@
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 export interface VitalSignsData {
   systolicBP?: string
@@ -15,6 +16,7 @@ export interface OCRResult {
   data?: VitalSignsData
   error?: string
   confidence?: number
+  eventId?: string // ID do evento salvo no Supabase
 }
 
 // Configurações para diferentes serviços de OCR
@@ -444,11 +446,11 @@ export class VitalSignsOCR {
 // Instância singleton
 export const vitalSignsOCR = VitalSignsOCR.getInstance()
 
-// Hook para usar o serviço de OCR
+// Hook para usar o serviço de OCR com integração Supabase
 export const useVitalSignsOCR = () => {
   const { toast } = useToast()
   
-  const processImage = async (imageData: string): Promise<OCRResult> => {
+  const processImage = async (imageData: string, patientId?: string): Promise<OCRResult> => {
     try {
       // Pré-processar imagem
       const preprocessedImage = await vitalSignsOCR.preprocessImage(imageData)
@@ -462,6 +464,26 @@ export const useVitalSignsOCR = () => {
           description: result.error || "Não foi possível extrair dados da imagem",
           variant: "destructive"
         })
+        return result
+      }
+
+      // Se temos dados válidos e um patientId, salvar no Supabase
+      if (result.data && patientId) {
+        const savedEvent = await saveVitalSignsToSupabase(result.data, patientId)
+        if (savedEvent.success) {
+          result.eventId = savedEvent.eventId
+          toast({
+            title: "Dados Salvos",
+            description: "Sinais vitais registrados com sucesso no sistema",
+            variant: "default"
+          })
+        } else {
+          toast({
+            title: "Erro ao Salvar",
+            description: savedEvent.error || "Não foi possível salvar os dados no sistema",
+            variant: "destructive"
+          })
+        }
       }
       
       return result
@@ -482,4 +504,114 @@ export const useVitalSignsOCR = () => {
   }
   
   return { processImage }
+}
+
+/**
+ * Salva os dados de sinais vitais no Supabase
+ */
+export const saveVitalSignsToSupabase = async (
+  vitalSigns: VitalSignsData, 
+  patientId: string
+): Promise<{ success: boolean; eventId?: string; error?: string }> => {
+  try {
+    // Obter usuário atual
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return {
+        success: false,
+        error: "Usuário não autenticado"
+      }
+    }
+
+    // Preparar dados para inserção na tabela events
+    const eventData = {
+      patient_id: patientId,
+      type: 'vital_signs' as const,
+      occurred_at: new Date().toISOString(),
+      created_by: user.id,
+      // Mapear dados dos sinais vitais para os campos da tabela
+      heart_rate: vitalSigns.heartRate ? parseInt(vitalSigns.heartRate) : null,
+      oxygen_saturation: vitalSigns.oxygenSaturation ? parseInt(vitalSigns.oxygenSaturation) : null,
+      respiratory_rate: vitalSigns.respiratoryRate ? parseInt(vitalSigns.respiratoryRate) : null,
+      systolic_bp: vitalSigns.systolicBP ? parseInt(vitalSigns.systolicBP) : null,
+      diastolic_bp: vitalSigns.diastolicBP ? parseInt(vitalSigns.diastolicBP) : null,
+      temperature: vitalSigns.temperature ? parseFloat(vitalSigns.temperature) : null,
+      notes: `Dados extraídos via OCR - Confiança: ${Math.round((vitalSigns.confidence || 0) * 100)}%`
+    }
+
+    // Inserir no Supabase
+    const { data, error } = await supabase
+      .from('events')
+      .insert(eventData)
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('Erro ao salvar no Supabase:', error)
+      return {
+        success: false,
+        error: `Erro no banco de dados: ${error.message}`
+      }
+    }
+
+    return {
+      success: true,
+      eventId: data.id
+    }
+
+  } catch (error) {
+    console.error('Erro ao salvar sinais vitais:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido'
+    }
+  }
+}
+
+/**
+ * Busca histórico de sinais vitais de um paciente
+ */
+export const getVitalSignsHistory = async (patientId: string, limit: number = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('events')
+      .select(`
+        id,
+        occurred_at,
+        heart_rate,
+        oxygen_saturation,
+        respiratory_rate,
+        systolic_bp,
+        diastolic_bp,
+        temperature,
+        notes,
+        created_by,
+        profiles!events_created_by_fkey(full_name)
+      `)
+      .eq('patient_id', patientId)
+      .eq('type', 'vital_signs')
+      .order('occurred_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Erro ao buscar histórico:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+
+    return {
+      success: true,
+      data: data
+    }
+
+  } catch (error) {
+    console.error('Erro ao buscar histórico de sinais vitais:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido'
+    }
+  }
 }

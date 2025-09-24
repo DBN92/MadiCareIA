@@ -12,12 +12,14 @@ interface VitalSignsCameraProps {
   onDataExtracted: (data: VitalSignsData) => void
   onClose: () => void
   isOpen: boolean
+  patientId?: string
 }
 
 export const VitalSignsCamera: React.FC<VitalSignsCameraProps> = ({
   onDataExtracted,
   onClose,
-  isOpen
+  isOpen,
+  patientId
 }) => {
   const [isStreaming, setIsStreaming] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
@@ -122,7 +124,7 @@ export const VitalSignsCamera: React.FC<VitalSignsCameraProps> = ({
     setIsProcessing(true)
     
     try {
-      const result = await processImage(capturedImage)
+      const result = await processImage(capturedImage, patientId)
       
       if (result.success && result.data) {
         setExtractedData(result.data)
@@ -148,7 +150,7 @@ export const VitalSignsCamera: React.FC<VitalSignsCameraProps> = ({
     } finally {
       setIsProcessing(false)
     }
-  }, [capturedImage, processImage, toast])
+  }, [capturedImage, processImage, toast, patientId])
 
   // Validar dados extraídos
   const validateData = useCallback((data: VitalSignsData): { isValid: boolean; errors: string[] } => {
