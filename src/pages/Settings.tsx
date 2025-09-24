@@ -524,71 +524,75 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50/30 via-white to-blue-50/30 p-6">
-      <div className="container mx-auto space-y-6">
-        <div className="flex items-center gap-2 mb-6 backdrop-blur-sm bg-white/70 rounded-2xl p-6 border border-white/20 shadow-lg">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-50/30 via-white to-blue-50/30 overflow-hidden">
+      <div className="h-full flex flex-col">
+        <div className="flex items-center gap-2 p-6 backdrop-blur-sm bg-white/70 border-b border-white/20 shadow-sm flex-shrink-0">
           <SettingsIcon className="h-6 w-6 text-purple-600" />
           <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Configurações da Plataforma
           </h1>
         </div>
 
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 backdrop-blur-sm bg-white/70 border-white/20 shadow-lg">
-            <TabsTrigger 
-              value="profile" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <User className="h-4 w-4" />
-              Perfil
-            </TabsTrigger>
-            <TabsTrigger 
-              value="branding" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <Image className="h-4 w-4" />
-              Logo
-            </TabsTrigger>
-            <TabsTrigger 
-              value="users" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <Users className="h-4 w-4" />
-              Usuários
-            </TabsTrigger>
-            <TabsTrigger 
-              value="hospitals" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <Building2 className="h-4 w-4" />
-              Hospitais
-            </TabsTrigger>
-            <TabsTrigger 
-              value="permissions" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <Shield className="h-4 w-4" />
-              Permissões
-            </TabsTrigger>
-            <TabsTrigger 
-              value="chat" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <Bot className="h-4 w-4" />
-              Chat IA
-            </TabsTrigger>
-            <TabsTrigger 
-              value="logs" 
-              className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300"
-            >
-              <FileText className="h-4 w-4" />
-              Logs
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="profile" className="flex-1 flex flex-col overflow-hidden">
+          <div className="w-full backdrop-blur-sm bg-white/70 border-b border-white/20 shadow-sm flex-shrink-0">
+            <TabsList className="w-full h-auto p-1 bg-transparent justify-start overflow-x-auto scrollbar-hide">
+              <div className="flex gap-1 min-w-max">
+                <TabsTrigger 
+                  value="profile" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <User className="h-4 w-4 flex-shrink-0" />
+                  Perfil
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="branding" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <Image className="h-4 w-4 flex-shrink-0" />
+                  Logo
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="users" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <Users className="h-4 w-4 flex-shrink-0" />
+                  Usuários
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="hospitals" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <Building2 className="h-4 w-4 flex-shrink-0" />
+                  Hospitais
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="permissions" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <Shield className="h-4 w-4 flex-shrink-0" />
+                  Permissões
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="chat" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <Bot className="h-4 w-4 flex-shrink-0" />
+                  Chat IA
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="logs" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <FileText className="h-4 w-4 flex-shrink-0" />
+                  Logs
+                </TabsTrigger>
+              </div>
+            </TabsList>
+          </div>
 
           {/* Configurações de Perfil */}
-          <TabsContent value="profile" className="space-y-4">
-            <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.01]">
+          <TabsContent value="profile" className="flex-1 overflow-y-auto p-6">
+            <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.01] max-w-4xl mx-auto">
               <CardHeader className="bg-gradient-to-r from-purple-50/50 to-blue-50/50 rounded-t-lg">
                 <CardTitle className="text-gray-800">Meu Perfil</CardTitle>
                 <CardDescription>
@@ -655,8 +659,8 @@ export default function Settings() {
         </TabsContent>
 
         {/* Personalização do Logo */}
-        <TabsContent value="branding" className="space-y-4">
-          <Card>
+        <TabsContent value="branding" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-4xl mx-auto">
             <CardHeader>
               <CardTitle>Personalização do Logo</CardTitle>
               <CardDescription>
@@ -670,8 +674,8 @@ export default function Settings() {
         </TabsContent>
 
         {/* Gestão de Usuários */}
-        <TabsContent value="users" className="space-y-4">
-          <Card>
+        <TabsContent value="users" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-7xl mx-auto">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -852,8 +856,8 @@ export default function Settings() {
         </TabsContent>
 
         {/* Gestão de Hospitais */}
-        <TabsContent value="hospitals" className="space-y-4">
-          <Card>
+        <TabsContent value="hospitals" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-7xl mx-auto">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -995,8 +999,8 @@ export default function Settings() {
         </TabsContent>
 
         {/* Controle de Permissões */}
-        <TabsContent value="permissions" className="space-y-4">
-          <Card>
+        <TabsContent value="permissions" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-4xl mx-auto">
             <CardHeader>
               <CardTitle>Controle de Permissões</CardTitle>
               <CardDescription>
@@ -1073,8 +1077,8 @@ export default function Settings() {
         </TabsContent>
 
         {/* Configurações do Chat IA */}
-        <TabsContent value="chat" className="space-y-4">
-          <Card>
+        <TabsContent value="chat" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-4xl mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
@@ -1272,8 +1276,8 @@ export default function Settings() {
         </TabsContent>
 
         {/* Logs do Sistema */}
-        <TabsContent value="logs" className="space-y-4">
-          <Card>
+        <TabsContent value="logs" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-7xl mx-auto">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>

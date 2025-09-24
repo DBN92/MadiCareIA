@@ -1,486 +1,380 @@
-import { useParams, useSearchParams } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { FamilyLayout } from '@/components/FamilyLayout'
-import FamilyCare from '@/components/FamilyCare'
-import { useIsMobile } from '@/hooks/use-mobile'
-
-import { useFamilyAccess, FamilyPermissions, FamilyAccessToken } from '@/hooks/useFamilyAccess'
-import { useCareEvents } from '@/hooks/useCareEvents'
-import { useEffect, useState } from 'react'
-import { Patient } from '@/hooks/usePatients'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useFamilyAccess, FamilyAccessToken, FamilyPermissions } from '@/hooks/useFamilyAccess';
+import { useCareEvents } from '@/hooks/useCareEvents';
+import { Patient } from '@/hooks/usePatients';
+import { FamilyLayout } from '@/components/FamilyLayout';
+import FamilyCare from '@/components/FamilyCare';
 import { 
   Heart, 
-  Calendar,
-  Clock,
-  Droplets,
-  Pill,
+  Droplets, 
+  Pill, 
+  Utensils, 
+  FileText, 
+  Shield, 
+  ShieldCheck, 
+  ShieldX,
   Activity,
-  Utensils,
-  Toilet,
+  Clock,
+  User,
   AlertCircle,
-  Shield,
-  Eye,
-  Edit,
-  Info
-} from 'lucide-react'
+  Smile
+} from 'lucide-react';
 
-const FamilyDashboard = () => {
-  const { patientId, token } = useParams<{ patientId: string; token: string }>()
-  const [searchParams] = useSearchParams()
-  const location = window.location.pathname
-  const isMobile = useIsMobile()
+interface CareEvent {
+  id: string;
+  patient_id: string;
+  type: string;
+  description?: string;
+  created_at: string;
+  created_by: string;
+  metadata?: any;
+  mood_scale?: number;
+  happiness_scale?: number;
+  mood_notes?: string;
+}
+
+const FamilyDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { validateTokenWithData, getPermissions } = useFamilyAccess();
+  const { events, loading: eventsLoading } = useCareEvents();
   
-  // Detectar view baseada na URL
-  let currentView = searchParams.get('view') || 'dashboard'
-  if (location.endsWith('/care')) {
-    currentView = 'care'
-  } else if (location.endsWith('/reports')) {
-    currentView = 'reports'
-  }
-  const { validateTokenWithData, getPermissions, generateFamilyToken } = useFamilyAccess()
-  const [patient, setPatient] = useState<Patient | null>(null)
-  const [permissions, setPermissions] = useState<FamilyPermissions | null>(null)
-  const [tokenData, setTokenData] = useState<FamilyAccessToken | null>(null)
-  const { events } = useCareEvents(patient?.id)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [token, setToken] = useState<FamilyAccessToken | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const view = new URLSearchParams(location.search).get('view') || 'dashboard';
 
   useEffect(() => {
     const validateAccess = async () => {
-      if (!patientId || !token) {
-        setError('Token ou ID do paciente não encontrado')
-        setLoading(false)
-        return
-      }
-
       try {
-        const result = await validateTokenWithData(patientId, token)
-        if (result.isValid && result.patient && result.tokenData) {
-          setPatient(result.patient)
-          setTokenData(result.tokenData)
-          setPermissions(getPermissions(result.tokenData.role))
-        } else {
-          // Token inválido - criar automaticamente um novo token
-          console.log('🔄 Token inválido, criando automaticamente...')
-          try {
-            const newToken = await generateFamilyToken(patientId, 'editor')
-            console.log('✅ Token criado automaticamente:', newToken.token)
-            
-            // Revalidar com o novo token
-            const newResult = await validateTokenWithData(patientId, newToken.token)
-            if (newResult.isValid && newResult.patient && newResult.tokenData) {
-              setPatient(newResult.patient)
-              setTokenData(newResult.tokenData)
-              setPermissions(getPermissions(newResult.tokenData.role))
-            } else {
-              setError('Erro ao validar novo token criado')
-            }
-          } catch (tokenError) {
-            console.error('❌ Erro ao criar token automaticamente:', tokenError)
-            setError('Erro ao criar token de acesso automaticamente')
-          }
+        const storedToken = localStorage.getItem('family_token');
+        const storedPatientId = localStorage.getItem('family_patient_id');
+        
+        if (!storedToken || !storedPatientId) {
+          navigate('/family/login');
+          return;
         }
-      } catch (err) {
-        setError('Erro ao validar acesso')
-      } finally {
-        setLoading(false)
-      }
-    }
 
-    validateAccess()
-  }, [patientId, token, validateTokenWithData, getPermissions, generateFamilyToken])
+        const result = await validateTokenWithData(storedPatientId, storedToken);
+        if (!result.isValid || !result.patient || !result.tokenData) {
+          navigate('/family/login');
+          return;
+        }
+
+        setToken(result.tokenData);
+        setPatient(result.patient);
+      } catch (err) {
+        console.error('Validation error:', err);
+        setError('Erro ao validar acesso');
+        navigate('/family/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validateAccess();
+  }, [navigate, validateTokenWithData]);
+
+  // Helper functions
+  const getTypeIcon = (type: string) => {
+    const icons = {
+      drink: Droplets,
+      med: Pill,
+      meal: Utensils,
+      note: FileText,
+      bathroom: Heart,
+      mood: Smile
+    };
+    const Icon = icons[type as keyof typeof icons] || FileText;
+    return <Icon className="h-4 w-4" />;
+  };
+
+  const getTypeColor = (type: string) => {
+    const colors = {
+      drink: 'text-blue-600',
+      med: 'text-green-600',
+      meal: 'text-orange-600',
+      note: 'text-purple-600',
+      bathroom: 'text-pink-600',
+      mood: 'text-yellow-600'
+    };
+    return colors[type as keyof typeof colors] || 'text-gray-600';
+  };
+
+  const getBadgeColor = (type: string) => {
+    const colors = {
+      drink: 'bg-blue-100 text-blue-800',
+      med: 'bg-green-100 text-green-800',
+      meal: 'bg-orange-100 text-orange-800',
+      note: 'bg-purple-100 text-purple-800',
+      bathroom: 'bg-pink-100 text-pink-800',
+      mood: 'bg-yellow-100 text-yellow-800'
+    };
+    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getMoodEmoji = (scale: number) => {
+    const emojis = {
+      1: '😢',
+      2: '😔',
+      3: '😐',
+      4: '😊',
+      5: '😄'
+    };
+    return emojis[scale as keyof typeof emojis] || '😐';
+  };
+
+  const getHappinessEmoji = (scale: number) => {
+    const emojis = {
+      1: '😭',
+      2: '😞',
+      3: '😐',
+      4: '😊',
+      5: '🥰'
+    };
+    return emojis[scale as keyof typeof emojis] || '😐';
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Validando acesso...</p>
+          <Heart className="h-8 w-8 text-blue-600 animate-pulse mx-auto mb-4" />
+          <p className="text-gray-600">Carregando...</p>
         </div>
       </div>
-    )
+    );
   }
 
-  if (!patient) {
+  if (error || !patient || !token) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Acesso Negado</h2>
-            <p className="text-muted-foreground">
-              {error || 'Token inválido ou expirado.'}
-            </p>
+            <ShieldX className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Negado</h2>
+            <p className="text-gray-600 mb-4">{error || 'Token inválido ou expirado'}</p>
+            <Button onClick={() => navigate('/family/login')} className="w-full">
+              Fazer Login
+            </Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  // Filtrar eventos do paciente específico
-  const patientEvents = events.filter(event => event.patient_id === patientId)
-
-  // Eventos de hoje
-  const today = new Date().toISOString().split('T')[0]
+  const permissions = getPermissions(token.role);
+  const patientEvents = events.filter(event => event.patient_id === patient.id);
+  
+  // Calculate stats
+  const today = new Date().toDateString();
   const todayEvents = patientEvents.filter(event => 
-    event.created_at.startsWith(today)
-  )
-
-  // Eventos recentes (últimos 10)
-  const recentEvents = patientEvents
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 10)
-
-  // Estatísticas do dia
-  const todayStats = {
-    liquids: todayEvents
-      .filter(e => e.type === 'drink' && e.volume_ml)
-      .reduce((total, event) => total + (event.volume_ml || 0), 0),
+    new Date(event.created_at).toDateString() === today
+  );
+  
+  const stats = {
+    liquids: todayEvents.filter(e => e.type === 'drink').length,
     medications: todayEvents.filter(e => e.type === 'med').length,
     meals: todayEvents.filter(e => e.type === 'meal').length,
-  }
+    notes: todayEvents.filter(e => e.type === 'note').length,
+    mood: todayEvents.filter(e => e.type === 'mood').length
+  };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'drink': return Droplets
-      case 'med': return Pill
-      case 'note': return Activity
-      case 'meal': return Utensils
-      case 'bathroom': return Toilet
-      default: return Heart
-    }
-  }
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'drink': return 'text-primary'
-      case 'med': return 'text-secondary'
-      case 'note': return 'text-accent'
-      case 'meal': return 'text-muted-foreground'
-      case 'bathroom': return 'text-muted-foreground'
-      default: return 'text-foreground'
-    }
-  }
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'drink': return 'Líquidos'
-      case 'med': return 'Medicamentos'
-      case 'note': return 'Anotações'
-      case 'meal': return 'Alimentação'
-      case 'bathroom': return 'Banheiro'
-      default: return 'Outros'
-    }
-  }
-
-  const getBadgeColor = (type: string) => {
-    switch (type) {
-      case 'drink': return 'bg-primary/10 text-primary border-primary/20'
-      case 'med': return 'bg-secondary/10 text-secondary border-secondary/20'
-      case 'note': return 'bg-accent/10 text-accent border-accent/20'
-      case 'meal': return 'bg-muted text-muted-foreground border-muted'
-      case 'bathroom': return 'bg-muted text-muted-foreground border-muted'
-      default: return 'bg-muted text-muted-foreground border-muted'
-    }
-  }
-
-  const getEventDescription = (event: any) => {
-    switch (event.type) {
-      case 'drink':
-        return `Hidratação${event.volume_ml ? ` - ${event.volume_ml}ml` : ''}`
-      case 'med':
-        return `${event.med_name || 'Medicamento'}${event.med_dose ? ` - ${event.med_dose}` : ''}`
-      case 'meal':
-        return event.meal_desc || 'Refeição'
-      case 'bathroom':
-        return `Banheiro${event.bathroom_type ? ` - ${event.bathroom_type}` : ''}`
-      case 'note':
-        return event.notes || 'Anotação'
-      default:
-        return 'Atividade'
-    }
-  }
+  // Get latest mood data
+  const latestMoodEvent = todayEvents
+    .filter(e => e.type === 'mood')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   const renderDashboard = () => (
-    <div className="space-y-6">
-      {/* Informações de Acesso */}
-      {permissions && (
-        <Card className="medical-card border-l-4 border-l-primary">
-          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
-            <div className="flex items-center gap-2">
-              <Shield className={`text-primary ${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'}`}>Seu Nível de Acesso</CardTitle>
+    <div className="space-y-4">
+      {/* Patient Info - Always Visible */}
+      <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <User className="h-6 w-6" />
+            <div>
+              <h2 className="text-lg font-semibold">{patient.full_name}</h2>
+              <p className="text-blue-100 text-sm">
+                {patient.bed && `Leito: ${patient.bed}`}
+                {patient.birth_date && ` • Nascimento: ${new Date(patient.birth_date).toLocaleDateString()}`}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`flex items-start ${isMobile ? 'gap-3' : 'gap-4'}`}>
-              <div className={`rounded-lg ${isMobile ? 'p-2' : 'p-3'} ${
-                permissions.canEdit 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-primary/10 text-primary border-primary/20'
-              }`}>
-                {permissions.canEdit ? (
-                  <Edit className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
-                ) : (
-                  <Eye className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
-                )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Latest Mood Status */}
+      {latestMoodEvent && (
+        <Card className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Smile className="h-6 w-6" />
+                <div>
+                  <h3 className="text-lg font-semibold">Estado Emocional</h3>
+                  <p className="text-yellow-100 text-sm">
+                    Última atualização: {new Date(latestMoodEvent.created_at).toLocaleTimeString()}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className={`font-semibold mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
-                  {permissions.canEdit ? 'Editor' : 'Visualizador'}
-                </h3>
-                <p className={`text-muted-foreground mb-3 ${isMobile ? 'text-sm' : ''}`}>
-                  {permissions.canEdit 
-                    ? 'Você pode visualizar todas as informações e registrar novos cuidados para o paciente.'
-                    : 'Você pode visualizar todas as informações do paciente, mas não pode registrar novos cuidados.'
-                  }
-                </p>
-                <div className={`grid gap-2 text-sm ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
-                  <div className={`flex items-center gap-1 ${
-                    permissions.canView ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    <Eye className="h-3 w-3" />
-                    <span className={`${isMobile ? 'text-xs' : ''}`}>Visualizar</span>
-                  </div>
-                  <div className={`flex items-center gap-1 ${
-                    permissions.canRegisterLiquids ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    <Droplets className="h-3 w-3" />
-                    <span className={`${isMobile ? 'text-xs' : ''}`}>Líquidos</span>
-                  </div>
-                  <div className={`flex items-center gap-1 ${
-                    permissions.canRegisterMedications ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    <Pill className="h-3 w-3" />
-                    <span className={`${isMobile ? 'text-xs' : ''}`}>Medicamentos</span>
-                  </div>
-                  <div className={`flex items-center gap-1 ${
-                    permissions.canRegisterMeals ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    <Utensils className="h-3 w-3" />
-                    <span className={`${isMobile ? 'text-xs' : ''}`}>Refeições</span>
-                  </div>
+              <div className="text-right">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm">Humor:</span>
+                  <span className="text-2xl">{getMoodEmoji(latestMoodEvent.mood_scale || 3)}</span>
+                  <span className="text-lg font-bold">{latestMoodEvent.mood_scale}/5</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Felicidade:</span>
+                  <span className="text-2xl">{getHappinessEmoji(latestMoodEvent.happiness_scale || 3)}</span>
+                  <span className="text-lg font-bold">{latestMoodEvent.happiness_scale}/5</span>
                 </div>
               </div>
             </div>
+            {latestMoodEvent.mood_notes && (
+              <div className="mt-3 p-2 bg-white/20 rounded-lg">
+                <p className="text-sm text-yellow-100">
+                  <strong>Observações:</strong> {latestMoodEvent.mood_notes}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Estatísticas Diárias */}
-      <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
-        <Card className="medical-card">
-          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
-            <div className="flex items-center justify-between">
-              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isMobile ? 'Líquidos' : 'Líquidos Hoje'}
-              </CardTitle>
-              <Droplets className={`text-primary ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {[
+          { label: 'Líquidos', value: stats.liquids, icon: Droplets, color: 'blue' },
+          { label: 'Medicamentos', value: stats.medications, icon: Pill, color: 'green' },
+          { label: 'Refeições', value: stats.meals, icon: Utensils, color: 'orange' },
+          { label: 'Anotações', value: stats.notes, icon: FileText, color: 'purple' },
+          { label: 'Humor', value: stats.mood, icon: Smile, color: 'yellow' }
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label} className="p-3">
+            <div className="flex items-center gap-2">
+              <Icon className={`h-4 w-4 text-${color}-600`} />
+              <div>
+                <p className="text-xs text-gray-600">{label}</p>
+                <p className="text-lg font-semibold">{value}</p>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
-              {todayStats.liquids}ml
-            </div>
-            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
-              {todayEvents.filter(e => e.type === 'drink').length} registros
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="medical-card">
-          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
-            <div className="flex items-center justify-between">
-              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isMobile ? 'Medicamentos' : 'Medicamentos'}
-              </CardTitle>
-              <Pill className={`text-green-600 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
-              {todayStats.medications}
-            </div>
-            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
-              doses hoje
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="medical-card">
-          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
-            <div className="flex items-center justify-between">
-              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                Refeições
-              </CardTitle>
-              <Utensils className={`text-orange-600 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
-              {todayStats.meals}
-            </div>
-            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
-              refeições hoje
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="medical-card">
-          <CardHeader className={`${isMobile ? 'pb-2' : 'pb-3'}`}>
-            <div className="flex items-center justify-between">
-              <CardTitle className={`font-medium text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                Atividades
-              </CardTitle>
-              <Activity className={`text-purple-600 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`font-bold text-foreground ${isMobile ? 'text-lg' : 'text-2xl'}`}>
-              {todayEvents.length}
-            </div>
-            <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
-              registros hoje
-            </p>
-          </CardContent>
-        </Card>
+          </Card>
+        ))}
       </div>
 
-      {/* Atividades Recentes */}
-      <Card className="medical-card">
-        <CardHeader>
-          <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
-            <Clock className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
-            Atividades Recentes
-          </CardTitle>
-          <CardDescription className={`${isMobile ? 'text-sm' : ''}`}>
-            Últimos registros de cuidados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
-            {recentEvents.length === 0 ? (
-              <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-                <Heart className={`text-muted-foreground mx-auto mb-4 ${isMobile ? 'h-10 w-10' : 'h-12 w-12'}`} />
-                <p className={`text-muted-foreground ${isMobile ? 'text-sm' : ''}`}>
-                  Nenhuma atividade registrada ainda hoje.
-                </p>
-              </div>
-            ) : (
-              recentEvents.map((event) => {
-                const IconComponent = getTypeIcon(event.type)
-                return (
-                  <div key={event.id} className={`flex items-center bg-muted/50 rounded-lg ${isMobile ? 'gap-3 p-2.5' : 'gap-4 p-3'}`}>
-                    <div className={`rounded-lg bg-background ${getTypeColor(event.type)} ${isMobile ? 'p-1.5' : 'p-2'}`}>
-                      <IconComponent className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-foreground ${isMobile ? 'text-sm' : ''}`}>
-                        {getEventDescription(event)}
-                      </p>
-                      <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                        {new Date(event.created_at).toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                    <Badge className={`${getBadgeColor(event.type)} ${isMobile ? 'text-xs px-2 py-0.5' : ''}`}>
-                      {getTypeLabel(event.type)}
-                    </Badge>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Informações do Paciente */}
-      <Card className="medical-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart className="h-5 w-5" />
-            Informações do Paciente
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0">
-              {patient.photo ? (
-                <img
-                  src={patient.photo}
-                  alt={`Foto de ${patient.full_name}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                  <Heart className="h-8 w-8 text-primary/60" />
-                </div>
-              )}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">{patient.full_name}</h3>
-              <p className="text-sm text-muted-foreground">Leito {patient.bed}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Data de Nascimento</p>
-              <p className="font-medium text-foreground">
-                {new Date(patient.birth_date).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Leito</p>
-              <p className="font-medium text-foreground">{patient.bed}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Data de Internação</p>
-              <p className="font-medium text-foreground">
-                {new Date(patient.created_at).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Idade</p>
-              <p className="font-medium text-foreground">
-                {new Date().getFullYear() - new Date(patient.birth_date).getFullYear()} anos
-              </p>
-            </div>
-          </div>
-          {patient.notes && (
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground mb-1">Observações</p>
-              <p className="text-sm text-foreground bg-muted/50 p-3 rounded-md">
-                {patient.notes}
-              </p>
-            </div>
+      {/* Permissions */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Shield className="h-4 w-4 text-gray-600" />
+          <h3 className="font-medium">Permissões</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {permissions.canView && (
+            <Badge variant="secondary" className="text-xs">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Visualizar
+            </Badge>
           )}
+          {permissions.canEdit && (
+            <Badge variant="secondary" className="text-xs">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Registrar
+            </Badge>
+          )}
+        </div>
+      </Card>
+
+      {/* Recent Activities */}
+      {todayEvents.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="h-4 w-4 text-gray-600" />
+            <h3 className="font-medium">Hoje ({todayEvents.length})</h3>
+          </div>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {todayEvents.slice(0, 5).map((event) => (
+              <div key={event.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                <div className={getTypeColor(event.type)}>
+                  {getTypeIcon(event.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {event.type === 'mood' ? (
+                    <div>
+                      <p className="text-sm font-medium">
+                        Humor: {getMoodEmoji(event.mood_scale || 3)} {event.mood_scale}/5 • 
+                        Felicidade: {getHappinessEmoji(event.happiness_scale || 3)} {event.happiness_scale}/5
+                      </p>
+                      {event.mood_notes && (
+                        <p className="text-xs text-gray-500 truncate">{event.mood_notes}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium truncate">{event.notes || 'Sem descrição'}</p>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    {new Date(event.created_at).toLocaleTimeString()}
+                  </p>
+                </div>
+                <Badge className={`text-xs ${getBadgeColor(event.type)}`}>
+                  {event.type === 'mood' ? 'humor' : event.type}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+
+  const renderCare = () => (
+    <div className="space-y-4">
+      {/* Patient Info - Always Visible */}
+      <Card className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Activity className="h-6 w-6" />
+            <div>
+              <h2 className="text-lg font-semibold">{patient.full_name}</h2>
+              <p className="text-green-100 text-sm">Registrar Cuidados</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {!permissions.canEdit && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Você não tem permissão para registrar cuidados.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {permissions.canEdit && (
+        <Card className="p-4">
+          <FamilyCare 
+            patient={patient} 
+            permissions={permissions}
+          />
+        </Card>
+      )}
     </div>
-  )
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'care':
-        return <FamilyCare patient={patient} permissions={permissions} />
-
-      default:
-        return renderDashboard()
-    }
-  }
+  );
 
   return (
-    <FamilyLayout 
-      patient={patient} 
-      permissions={permissions}
-      currentPage={currentView as 'dashboard' | 'care'}
-    >
-      {renderContent()}
+    <FamilyLayout patient={patient} permissions={permissions} currentPage={view === 'care' ? 'care' : 'dashboard'}>
+      <div className="p-4 max-w-4xl mx-auto">
+        {view === 'care' ? renderCare() : renderDashboard()}
+      </div>
     </FamilyLayout>
-  )
-}
+  );
+};
 
-export default FamilyDashboard
+export default FamilyDashboard;

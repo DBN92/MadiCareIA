@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Send, Bot, User, MessageCircle, X, Minimize2, Maximize2 } from 'lucide-react';
 import { openAIService, ChatMessage } from '@/services/openai';
 import { assistantDataService, AssistantData } from '@/services/assistantData';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface VirtualAssistantProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export const VirtualAssistant: React.FC<VirtualAssistantProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [assistantData, setAssistantData] = useState<AssistantData | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const isMobile = useIsMobile();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -118,8 +120,9 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
 
     try {
       // Prepara contexto dos dados se disponível
-      const contextData = assistantData ? 
-        assistantDataService.formatDataForAssistant(assistantData) : null;
+      const contextData = assistantData ? {
+        systemData: assistantDataService.formatDataForAssistant(assistantData)
+      } : undefined;
 
       const response = await openAIService.sendMessage(inputMessage, contextData);
 
@@ -184,43 +187,49 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 z-[9998]" style={{ zIndex: 9998 }}>
-      <Card className={`w-96 shadow-2xl border-2 transition-all duration-300 ${
-        isMinimized ? 'h-16' : 'h-[600px]'
-      }`}>
+    <div className={`fixed z-[9998] ${isMobile ? 'bottom-16 right-2 left-2' : 'bottom-8 right-4'}`} style={{ zIndex: 9998 }}>
+      <Card className={`shadow-2xl border-2 transition-all duration-300 backdrop-blur-md bg-white/95 dark:bg-gray-900/95 ${
+        isMinimized 
+          ? (isMobile ? 'h-12' : 'h-16') 
+          : (isMobile ? 'h-80 max-h-[70vh]' : 'w-80 h-96')
+      } ${isMobile ? 'w-full' : 'w-80'}`}>
         {/* Header */}
-        <CardHeader className="pb-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+        <CardHeader className={`bg-gradient-to-r from-blue-600/90 to-blue-700/90 text-white rounded-t-lg backdrop-blur-sm ${
+          isMobile ? 'pb-1 px-3 py-2' : 'pb-2'
+        }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              <CardTitle className="text-lg">Assistente Virtual</CardTitle>
-              {isLoadingData && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Bot className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+              <CardTitle className={`font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                {isMobile ? 'Assistente' : 'Assistente Virtual'}
+              </CardTitle>
+              {isLoadingData && <Loader2 className="h-3 w-3 animate-spin" />}
             </div>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMinimized(!isMinimized)}
-                className="text-white hover:bg-blue-800 h-8 w-8 p-0"
+                className={`text-white hover:bg-blue-800/50 p-0 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`}
               >
-                {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+                {isMinimized ? <Maximize2 className="h-2.5 w-2.5" /> : <Minimize2 className="h-2.5 w-2.5" />}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onToggle}
-                className="text-white hover:bg-blue-800 h-8 w-8 p-0"
+                className={`text-white hover:bg-blue-800/50 p-0 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`}
               >
-                <X className="h-4 w-4" />
+                <X className="h-2.5 w-2.5" />
               </Button>
             </div>
           </div>
-          {assistantData && !isMinimized && (
-            <div className="flex gap-2 mt-2">
-              <Badge variant="secondary" className="text-xs">
-                {assistantData.summary.activePatients} pacientes ativos
+          {assistantData && !isMinimized && !isMobile && (
+            <div className="flex gap-1 mt-1">
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                {assistantData.summary.activePatients} ativos
               </Badge>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
                 {assistantData.summary.totalEvents} eventos
               </Badge>
             </div>
@@ -228,56 +237,68 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col h-[calc(600px-120px)]">
+          <CardContent className={`p-0 flex flex-col ${
+            isMobile ? 'h-[calc(320px-48px)]' : 'h-[calc(384px-80px)]'
+          }`}>
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
+            <ScrollArea className={`flex-1 ${isMobile ? 'p-2' : 'p-3'}`}>
+              <div className={isMobile ? 'space-y-2' : 'space-y-3'}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex gap-3 ${
+                    className={`flex ${isMobile ? 'gap-1.5' : 'gap-2'} ${
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     {message.role === 'assistant' && (
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Bot className="h-4 w-4 text-blue-600" />
+                        <div className={`bg-blue-100 rounded-full flex items-center justify-center ${
+                          isMobile ? 'w-4 h-4' : 'w-6 h-6'
+                        }`}>
+                          <Bot className={`text-blue-600 ${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
                         </div>
                       </div>
                     )}
                     
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                      className={`max-w-[85%] rounded-lg ${
+                        isMobile ? 'px-2 py-1' : 'px-2.5 py-1.5'
+                      } ${
                         message.role === 'user'
                           ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                          : 'bg-gray-100/80 text-gray-900 backdrop-blur-sm'
                       }`}
                     >
-                      <div className="text-sm whitespace-pre-wrap">
+                      <div className={`whitespace-pre-wrap leading-relaxed ${
+                        isMobile ? 'text-xs' : 'text-xs'
+                      }`}>
                         {message.isLoading ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="flex items-center gap-1.5">
+                            <Loader2 className={`animate-spin ${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'}`} />
                             <span>{message.content}</span>
                           </span>
                         ) : (
                           <span>{message.content}</span>
                         )}
                       </div>
-                      <div className={`text-xs mt-1 opacity-70 ${
-                        message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        {message.timestamp.toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
+                      {!isMobile && (
+                        <div className={`text-xs mt-0.5 opacity-70 ${
+                          message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                        }`}>
+                          {message.timestamp.toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     {message.role === 'user' && (
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-gray-600" />
+                        <div className={`bg-gray-100 rounded-full flex items-center justify-center ${
+                          isMobile ? 'w-4 h-4' : 'w-6 h-6'
+                        }`}>
+                          <User className={`text-gray-600 ${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
                         </div>
                       </div>
                     )}
@@ -288,38 +309,38 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="border-t p-4">
-              <div className="flex gap-2">
+            <div className={`border-t bg-white/50 backdrop-blur-sm ${isMobile ? 'p-2' : 'p-3'}`}>
+              <div className={`flex ${isMobile ? 'gap-1' : 'gap-2'}`}>
                 <Input
                   ref={inputRef}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Digite sua pergunta..."
+                  placeholder={isMobile ? "Pergunte..." : "Digite sua pergunta..."}
                   disabled={isLoading}
-                  className="flex-1"
+                  className={`flex-1 ${isMobile ? 'text-xs h-7' : 'text-xs h-8'}`}
                 />
                 <Button
                   onClick={sendMessage}
                   disabled={isLoading || !inputMessage.trim()}
                   size="sm"
-                  className="px-3"
+                  className={`${isMobile ? 'px-1.5 h-7' : 'px-2 h-8'}`}
                 >
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className={`animate-spin ${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'}`} />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <Send className={isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
                   )}
                 </Button>
               </div>
               
-              {messages.length > 1 && (
+              {messages.length > 1 && !isMobile && (
                 <div className="flex justify-center mt-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={clearChat}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="text-xs text-gray-500 hover:text-gray-700 h-6 px-2"
                   >
                     Limpar conversa
                   </Button>

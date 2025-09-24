@@ -1,19 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import { Tables } from '@/integrations/supabase/types'
 
-export interface CareEvent {
-  id: string
-  patient_id: string
-  type: 'drink' | 'meal' | 'med' | 'bathroom' | 'note'
-  scheduled_at?: string
-  occurred_at: string
-  volume_ml?: number
-  meal_desc?: string
-  med_name?: string
-  med_dose?: string
-  bathroom_type?: string
-  notes?: string
-  created_at: string
+export type CareEvent = Tables<'events'> & {
+  mood_scale?: number
+  happiness_scale?: number
+  mood_notes?: string
 }
 
 export const useCareEvents = (patientId?: string) => {

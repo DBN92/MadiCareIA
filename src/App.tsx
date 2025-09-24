@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -40,6 +40,13 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const isMobile = useIsMobile();
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const location = useLocation();
+  
+  // Verifica se está no painel familiar
+  const isFamilyPanel = location.pathname.startsWith('/family/');
+  
+  // Considera desktop apenas telas >= 1024px (usa a mesma lógica do useIsMobile invertida)
+  const isDesktop = !isMobile;
   
   return (
     <>
@@ -117,18 +124,22 @@ const AppContent = () => {
         </Routes>
         </PageTransition>
         
-        {/* BottomNavigation como div separada da root */}
-        {isMobile && <BottomNavigation />}
+        {/* BottomNavigation - aparece sempre exceto em desktop (>=1024px) */}
+        {!isDesktop && <BottomNavigation />}
         
-        {/* VirtualAssistant como div separada da root */}
-        <VirtualAssistantToggle
-          onClick={() => setIsAssistantOpen(true)}
-          isOpen={isAssistantOpen}
-        />
-        <VirtualAssistant
-          isOpen={isAssistantOpen}
-          onToggle={() => setIsAssistantOpen(!isAssistantOpen)}
-        />
+        {/* VirtualAssistant - oculto no painel familiar */}
+        {!isFamilyPanel && (
+          <>
+            <VirtualAssistantToggle
+              onClick={() => setIsAssistantOpen(true)}
+              isOpen={isAssistantOpen}
+            />
+            <VirtualAssistant
+              isOpen={isAssistantOpen}
+              onToggle={() => setIsAssistantOpen(!isAssistantOpen)}
+            />
+          </>
+        )}
     </>
   );
 };

@@ -17,46 +17,97 @@ export type Database = {
       events: {
         Row: {
           bathroom_type: string | null
+          consumption_percentage: number | null
           created_at: string
           created_by: string | null
+          diastolic_bp: number | null
+          dosage: string | null
+          drain_type: string | null
+          heart_rate: number | null
           id: string
+          left_amount: number | null
+          left_aspect: string | null
+          liquid_type: string | null
           meal_desc: string | null
+          meal_type: string | null
           med_dose: string | null
           med_name: string | null
+          medication_name: string | null
           notes: string | null
           occurred_at: string
+          oxygen_saturation: number | null
           patient_id: string
+          respiratory_rate: number | null
+          right_amount: number | null
+          right_aspect: string | null
+          route: string | null
           scheduled_at: string | null
+          systolic_bp: number | null
+          temperature: number | null
           type: Database["public"]["Enums"]["event_type"]
           volume_ml: number | null
         }
         Insert: {
           bathroom_type?: string | null
+          consumption_percentage?: number | null
           created_at?: string
           created_by?: string | null
+          diastolic_bp?: number | null
+          dosage?: string | null
+          drain_type?: string | null
+          heart_rate?: number | null
           id?: string
+          left_amount?: number | null
+          left_aspect?: string | null
+          liquid_type?: string | null
           meal_desc?: string | null
+          meal_type?: string | null
           med_dose?: string | null
           med_name?: string | null
+          medication_name?: string | null
           notes?: string | null
           occurred_at?: string
+          oxygen_saturation?: number | null
           patient_id: string
+          respiratory_rate?: number | null
+          right_amount?: number | null
+          right_aspect?: string | null
+          route?: string | null
           scheduled_at?: string | null
+          systolic_bp?: number | null
+          temperature?: number | null
           type: Database["public"]["Enums"]["event_type"]
           volume_ml?: number | null
         }
         Update: {
           bathroom_type?: string | null
+          consumption_percentage?: number | null
           created_at?: string
           created_by?: string | null
+          diastolic_bp?: number | null
+          dosage?: string | null
+          drain_type?: string | null
+          heart_rate?: number | null
           id?: string
+          left_amount?: number | null
+          left_aspect?: string | null
+          liquid_type?: string | null
           meal_desc?: string | null
+          meal_type?: string | null
           med_dose?: string | null
           med_name?: string | null
+          medication_name?: string | null
           notes?: string | null
           occurred_at?: string
+          oxygen_saturation?: number | null
           patient_id?: string
+          respiratory_rate?: number | null
+          right_amount?: number | null
+          right_aspect?: string | null
+          route?: string | null
           scheduled_at?: string | null
+          systolic_bp?: number | null
+          temperature?: number | null
           type?: Database["public"]["Enums"]["event_type"]
           volume_ml?: number | null
         }
@@ -150,7 +201,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      event_type: "drink" | "meal" | "med" | "bathroom" | "note"
+      event_type: "drink" | "meal" | "med" | "bathroom" | "note" | "medication" | "drain" | "vital_signs" | "mood"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -278,7 +329,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      event_type: ["drink", "meal", "med", "bathroom", "note"],
+      event_type: ["drink", "meal", "med", "bathroom", "note", "medication", "drain", "vital_signs", "mood"],
     },
   },
 } as const

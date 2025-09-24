@@ -9,27 +9,34 @@ interface PageTransitionProps {
 export default function PageTransition({ children, className = '' }: PageTransitionProps) {
   const location = useLocation()
   const [displayLocation, setDisplayLocation] = useState(location)
-  const [transitionStage, setTransitionStage] = useState('fadeIn')
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   useEffect(() => {
     if (location !== displayLocation) {
-      setTransitionStage('fadeOut')
+      setIsTransitioning(true)
+      // Pequeno delay para permitir transição suave
+      const timer = setTimeout(() => {
+        setDisplayLocation(location)
+        setIsTransitioning(false)
+      }, 150) // Reduzido para transição mais rápida
+      
+      return () => clearTimeout(timer)
     }
   }, [location, displayLocation])
 
   return (
     <div
-      className={`${className} ${
-        transitionStage === 'fadeIn' ? 'page-enter' : ''
+      className={`${className} transition-all duration-150 ease-out ${
+        isTransitioning ? 'opacity-95 scale-[0.99]' : 'opacity-100 scale-100'
       }`}
-      onAnimationEnd={() => {
-        if (transitionStage === 'fadeOut') {
-          setTransitionStage('fadeIn')
-          setDisplayLocation(location)
-        }
+      style={{
+        minHeight: '100vh',
+        willChange: 'transform, opacity'
       }}
     >
-      {children}
+      <div className={displayLocation.pathname !== location.pathname ? 'opacity-0' : 'opacity-100 transition-opacity duration-200 ease-in-out'}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -48,7 +55,7 @@ export function CardTransition({ children, className = '', delay = 0 }: PageTran
 
   return (
     <div
-      className={`${className} ${isVisible ? 'card-enter' : 'opacity-0'}`}
+      className={`${className} transition-all duration-300 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
     >
       {children}
     </div>
@@ -79,12 +86,12 @@ export function StaggeredTransition({
         ? children.map((child, index) => (
             <div
               key={index}
-              className={`${visibleItems.includes(index) ? 'page-enter-bottom' : 'opacity-0'}`}
+              className={`transition-all duration-300 ease-out ${visibleItems.includes(index) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             >
               {child}
             </div>
           ))
-        : <div className={`${visibleItems.includes(0) ? 'page-enter-bottom' : 'opacity-0'}`}>
+        : <div className={`transition-all duration-300 ease-out ${visibleItems.includes(0) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {children}
           </div>
       }

@@ -117,9 +117,9 @@ export class AssistantDataService {
   }
 
   /**
-   * Busca eventos por tipo
+   * Busca eventos por tipo com suporte aos novos tipos
    */
-  async getEventsByType(eventType: 'drink' | 'meal' | 'med' | 'bathroom' | 'note'): Promise<Event[]> {
+  async getEventsByType(eventType: 'drink' | 'meal' | 'med' | 'bathroom' | 'note' | 'medication' | 'drain' | 'vital_signs'): Promise<Event[]> {
     try {
       const { data: events, error } = await supabase
         .from('events')
@@ -128,14 +128,113 @@ export class AssistantDataService {
         .order('occurred_at', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar eventos por tipo:', error);
+        console.error(`Erro ao buscar eventos do tipo ${eventType}:`, error);
         throw error;
       }
 
       return events || [];
-
     } catch (error) {
-      console.error('Erro ao buscar eventos por tipo:', error);
+      console.error(`Erro ao buscar eventos do tipo ${eventType}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca o último líquido tomado por um paciente
+   */
+  async getLastLiquidByPatient(patientId: string): Promise<Event | null> {
+    try {
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('patient_id', patientId)
+        .eq('type', 'drink')
+        .order('occurred_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Erro ao buscar último líquido:', error);
+        throw error;
+      }
+
+      return events?.[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar último líquido:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca medicamentos administrados para um paciente
+   */
+  async getMedicationsByPatient(patientId: string, limit: number = 10): Promise<Event[]> {
+    try {
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('patient_id', patientId)
+        .in('type', ['med', 'medication'])
+        .order('occurred_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Erro ao buscar medicamentos:', error);
+        throw error;
+      }
+
+      return events || [];
+    } catch (error) {
+      console.error('Erro ao buscar medicamentos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca sinais vitais de um paciente
+   */
+  async getVitalSignsByPatient(patientId: string, limit: number = 10): Promise<Event[]> {
+    try {
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('patient_id', patientId)
+        .eq('type', 'vital_signs')
+        .order('occurred_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Erro ao buscar sinais vitais:', error);
+        throw error;
+      }
+
+      return events || [];
+    } catch (error) {
+      console.error('Erro ao buscar sinais vitais:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca dados de drenos de um paciente
+   */
+  async getDrainsByPatient(patientId: string, limit: number = 10): Promise<Event[]> {
+    try {
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('patient_id', patientId)
+        .eq('type', 'drain')
+        .order('occurred_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Erro ao buscar dados de drenos:', error);
+        throw error;
+      }
+
+      return events || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados de drenos:', error);
       throw error;
     }
   }
@@ -256,10 +355,56 @@ export class AssistantDataService {
   }
 
   /**
-   * Formata os dados para o contexto do assistente
+   * Formata os dados para o assistente virtual com informações detalhadas
    */
   formatDataForAssistant(data: AssistantData): string {
     const { patients, events, profiles, summary } = data;
+
+    // Agrupa eventos por tipo para análise detalhada
+    const eventsByType = events.reduce((acc, event) => {
+      if (!acc[event.type]) acc[event.type] = [];
+      acc[event.type].push(event);
+      return acc;
+    }, {} as Record<string, Event[]>);
+
+    // Formatar informações detalhadas dos últimos eventos
+    const formatEventDetails = (event: Event): string => {
+      const date = new Date(event.occurred_at).toLocaleString('pt-BR');
+      let details = `${event.type} - ${date}`;
+      
+      switch (event.type) {
+        case 'drink':
+          details += ` - ${event.liquid_type || 'Líquido'}: ${event.volume_ml}ml`;
+          break;
+        case 'meal':
+          details += ` - ${event.meal_type || 'Refeição'}: ${event.consumption_percentage || 0}% consumido`;
+          if (event.meal_desc) details += ` (${event.meal_desc})`;
+          break;
+        case 'medication':
+          details += ` - ${event.medication_name || event.med_name}: ${event.dosage || event.med_dose}`;
+          if (event.route) details += ` via ${event.route}`;
+          break;
+        case 'drain':
+          details += ` - ${event.drain_type}`;
+          if (event.left_amount) details += ` Esq: ${event.left_amount}ml`;
+          if (event.right_amount) details += ` Dir: ${event.right_amount}ml`;
+          break;
+        case 'vital_signs':
+          const vitals = [];
+          if (event.systolic_bp && event.diastolic_bp) vitals.push(`PA: ${event.systolic_bp}/${event.diastolic_bp}mmHg`);
+          if (event.heart_rate) vitals.push(`FC: ${event.heart_rate}bpm`);
+          if (event.temperature) vitals.push(`T: ${event.temperature}°C`);
+          if (event.oxygen_saturation) vitals.push(`SpO2: ${event.oxygen_saturation}%`);
+          details += ` - ${vitals.join(', ')}`;
+          break;
+        case 'bathroom':
+          details += ` - ${event.bathroom_type}`;
+          break;
+      }
+      
+      if (event.notes) details += ` - Obs: ${event.notes}`;
+      return details;
+    };
 
     return `
 RESUMO DO SISTEMA MEDICARE:
@@ -275,12 +420,26 @@ EVENTOS DE CUIDADO:
 ÚLTIMOS PACIENTES CADASTRADOS:
 ${patients.slice(0, 5).map(p => `- ${p.full_name} (Leito: ${p.bed || 'N/A'})`).join('\n')}
 
-EVENTOS RECENTES:
-${summary.recentEvents.slice(0, 5).map(e => `- ${e.type} - ${new Date(e.occurred_at).toLocaleString('pt-BR')}`).join('\n')}
+EVENTOS RECENTES DETALHADOS:
+${summary.recentEvents.slice(0, 10).map(e => `- ${formatEventDetails(e)}`).join('\n')}
+
+RESUMO POR TIPO DE CUIDADO:
+${Object.entries(eventsByType).map(([type, typeEvents]) => {
+  const count = typeEvents.length;
+  const recent = typeEvents.slice(0, 3);
+  return `\n${type.toUpperCase()} (${count} registros):
+${recent.map(e => `  - ${formatEventDetails(e)}`).join('\n')}`;
+}).join('\n')}
 
 PROFISSIONAIS:
 - Total de profissionais: ${profiles.length}
 ${profiles.slice(0, 3).map(p => `- ${p.full_name} (${p.role || 'Sem função definida'})`).join('\n')}
+
+INSTRUÇÕES PARA CONSULTAS:
+- Para buscar o último líquido de um paciente, use: "último líquido do paciente [nome]"
+- Para medicamentos: "medicamentos do paciente [nome]"
+- Para sinais vitais: "sinais vitais do paciente [nome]"
+- Para drenos: "drenos do paciente [nome]"
     `.trim();
   }
 }

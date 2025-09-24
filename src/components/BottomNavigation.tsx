@@ -52,8 +52,8 @@ export function BottomNavigation() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full h-[70px] bg-white dark:bg-gray-900 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] flex justify-around items-center md:hidden z-50">
-        <div className="flex items-center justify-around w-full h-full px-2 max-w-md mx-auto">
+    <nav className="fixed bottom-0 left-0 w-full h-[70px] bg-white dark:bg-gray-900 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] flex justify-around items-center z-50">
+        <div className="flex items-center justify-around w-full h-full px-2 max-w-2xl mx-auto">
         {navigationItems.map((item) => {
           const Icon = item.icon
           const active = isActive(item.url)
@@ -62,7 +62,7 @@ export function BottomNavigation() {
             <NavLink
               key={item.url}
               to={item.url}
-              className={`flex flex-col items-center justify-center min-w-0 flex-1 px-2 py-2 rounded-xl transition-all duration-300 transform active:scale-95 ${
+              className={`flex flex-col items-center justify-center min-w-0 flex-1 px-3 py-2 rounded-xl transition-all duration-300 transform active:scale-95 ${
                 active
                   ? 'text-primary bg-primary/15 scale-105 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:scale-105'

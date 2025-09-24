@@ -1,73 +1,114 @@
-# Welcome to your Lovable project
+# MediCare - Sistema de Gestão Hospitalar
 
-## Project info
+Sistema completo de gestão hospitalar desenvolvido com React, TypeScript e Supabase.
 
-**URL**: https://lovable.dev/projects/a1d103b1-bc41-497e-a85e-8fbedec60e73
+## Funcionalidades
 
-## How can I edit this code?
+- **Dashboard Administrativo**: Visão geral completa do sistema
+- **Gestão de Pacientes**: Cadastro, edição e acompanhamento de pacientes
+- **Gestão de Usuários**: Controle de acesso e permissões
+- **Gestão de Hospitais**: Cadastro e gerenciamento de unidades hospitalares
+- **Sistema de Cuidados**: Registro e acompanhamento de cuidados médicos
+- **Relatórios**: Geração de relatórios detalhados
+- **Acesso Familiar**: Portal para familiares acompanharem pacientes
+- **Chat IA**: Assistente virtual integrado
+- **Sistema de Logs**: Auditoria completa das ações do sistema
 
-There are several ways of editing your application.
+## Tecnologias Utilizadas
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **Build Tool**: Vite
+- **UI Components**: Radix UI, Lucide Icons
+- **Autenticação**: Supabase Auth
+- **Banco de Dados**: PostgreSQL (Supabase)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a1d103b1-bc41-497e-a85e-8fbedec60e73) and start prompting.
+## Instalação e Configuração
 
-Changes made via Lovable will be committed automatically to this repo.
+### Pré-requisitos
 
-**Use your preferred IDE**
+- Node.js 18+ 
+- npm ou yarn
+- Conta no Supabase
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Configuração Local
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone o repositório:
+```bash
+git clone <repository-url>
+cd MediCare
+```
 
-Follow these steps:
+2. Instale as dependências:
+```bash
+npm install
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. Configure as variáveis de ambiente:
+```bash
+cp .env.example .env.local
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. Configure suas credenciais do Supabase no arquivo `.env.local`:
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+5. Execute o projeto em modo de desenvolvimento:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+O projeto estará disponível em `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Scripts Disponíveis
 
-**Use GitHub Codespaces**
+- `npm run dev` - Executa o projeto em modo de desenvolvimento
+- `npm run build` - Gera build de produção
+- `npm run preview` - Visualiza o build de produção
+- `npm run lint` - Executa o linter
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Estrutura do Projeto
 
-## What technologies are used for this project?
+```
+src/
+├── components/          # Componentes reutilizáveis
+├── pages/              # Páginas da aplicação
+├── hooks/              # Custom hooks
+├── contexts/           # Contextos React
+├── integrations/       # Integrações (Supabase)
+├── lib/               # Utilitários
+└── styles/            # Estilos globais
+```
 
-This project is built with:
+## Deploy
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Build de Produção
 
-## How can I deploy this project?
+```bash
+npm run build
+```
 
-Simply open [Lovable](https://lovable.dev/projects/a1d103b1-bc41-497e-a85e-8fbedec60e73) and click on Share -> Publish.
+### Deploy com Docker
 
-## Can I connect a custom domain to my Lovable project?
+```bash
+docker build -t medicare .
+docker run -p 80:80 medicare
+```
 
-Yes, you can!
+## Contribuição
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Licença
+
+Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## Suporte
+
+Para suporte, entre em contato através do email: suporte@medicare.com
