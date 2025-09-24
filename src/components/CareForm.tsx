@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useCareEvents } from "@/hooks/useCareEvents"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { VitalSignsCamera } from "@/components/VitalSignsCamera"
+import { VitalSignsData } from "@/services/vitalSignsOCR"
 import { 
   Droplets, 
   Utensils, 
@@ -18,7 +20,8 @@ import {
   Save,
   Clock,
   Heart,
-  Smile
+  Smile,
+  Camera
 } from "lucide-react"
 
 interface CareFormProps {
@@ -100,6 +103,27 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
     time: getCurrentDateTime(),
     notes: ""
   })
+
+  // Estado para controlar o modal da câmera
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
+  
+  // Função para processar dados extraídos da câmera
+  const handleCameraDataExtracted = (data: VitalSignsData) => {
+    setVitalSignsForm(prev => ({
+      ...prev,
+      systolicBP: data.systolicBP || prev.systolicBP,
+      diastolicBP: data.diastolicBP || prev.diastolicBP,
+      heartRate: data.heartRate || prev.heartRate,
+      temperature: data.temperature || prev.temperature,
+      oxygenSaturation: data.oxygenSaturation || prev.oxygenSaturation,
+      respiratoryRate: data.respiratoryRate || prev.respiratoryRate
+    }))
+    
+    toast({
+      title: "Dados Preenchidos",
+      description: "Os campos foram preenchidos automaticamente com os dados da imagem.",
+    })
+  }
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -300,16 +324,17 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
   }
 
   return (
-    <Card className="medical-card">
-      <CardHeader className={`${isMobile ? 'pb-3 px-4 pt-4' : 'pb-4'}`}>
-        <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-lg sm:text-xl'}`}>
-          <Activity className={`text-primary ${isMobile ? 'h-4 w-4' : 'h-4 w-4 sm:h-5 sm:w-5'}`} />
-          Registro de Cuidados
-        </CardTitle>
-        <CardDescription className={`${isMobile ? 'text-sm' : 'text-sm sm:text-base'}`}>
-          Registre os cuidados realizados para o paciente
-        </CardDescription>
-      </CardHeader>
+    <>
+      <Card className="medical-card">
+        <CardHeader className={`${isMobile ? 'pb-3 px-4 pt-4' : 'pb-4'}`}>
+          <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-lg sm:text-xl'}`}>
+            <Activity className={`text-primary ${isMobile ? 'h-4 w-4' : 'h-4 w-4 sm:h-5 sm:w-5'}`} />
+            Registro de Cuidados
+          </CardTitle>
+          <CardDescription className={`${isMobile ? 'text-sm' : 'text-sm sm:text-base'}`}>
+            Registre os cuidados realizados para o paciente
+          </CardDescription>
+        </CardHeader>
       
       <CardContent className={`${isMobile ? 'p-3' : 'p-3 sm:p-4 lg:p-6'}`}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -732,6 +757,25 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           {/* Sinais Vitais */}
           <TabsContent value="vitals" className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
             <form onSubmit={handleSubmit} className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
+              
+              {/* Botão para captura por câmera - apenas em dispositivos móveis */}
+              {isMobile && (
+                <div className="mb-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCameraOpen(true)}
+                    className="w-full gap-2 h-12 text-base"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Capturar com Câmera
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Tire uma foto dos equipamentos para preencher automaticamente
+                  </p>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="systolic-bp" className="text-sm font-medium">Pressão Arterial Sistólica (mmHg)</Label>
@@ -918,5 +962,13 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
         </Tabs>
       </CardContent>
     </Card>
+    
+    {/* Modal da câmera para captura de sinais vitais */}
+    <VitalSignsCamera
+      isOpen={isCameraOpen}
+      onClose={() => setIsCameraOpen(false)}
+      onDataExtracted={handleCameraDataExtracted}
+    />
+  </>
   )
 }
