@@ -50,7 +50,20 @@ export const VitalSignsCamera: React.FC<VitalSignsCameraProps> = ({
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play()
+        
+        // Aguardar o vídeo estar pronto antes de tentar reproduzir
+        const playPromise = videoRef.current.play()
+        
+        if (playPromise !== undefined) {
+          try {
+            await playPromise
+          } catch (error) {
+            // Ignorar erros de play() interrompido - comum quando o usuário navega rapidamente
+            if (error.name !== 'AbortError') {
+              console.error('Erro ao reproduzir vídeo:', error)
+            }
+          }
+        }
       }
       
       setIsStreaming(true)
@@ -254,12 +267,21 @@ export const VitalSignsCamera: React.FC<VitalSignsCameraProps> = ({
     }
   }, [isOpen, isStreaming, capturedImage, startCamera, stopCamera])
 
-  // Alternar câmera quando facingMode muda
+  // Alternar câmera quando facingMode muda - evitar conflitos
   useEffect(() => {
-    if (isStreaming) {
-      startCamera()
+    if (isStreaming && isOpen) {
+      // Parar a câmera atual antes de iniciar a nova para evitar conflitos
+      stopCamera()
+      // Aguardar um pouco antes de reiniciar para evitar race conditions
+      const timer = setTimeout(() => {
+        if (isOpen) {
+          startCamera()
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
     }
-  }, [facingMode, isStreaming, startCamera])
+  }, [facingMode])
 
   if (!isOpen) return null
 
