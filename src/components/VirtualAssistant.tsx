@@ -318,7 +318,7 @@ Como posso ajudá-lo hoje? Posso fornecer informações sobre pacientes, analisa
                   onKeyPress={handleKeyPress}
                   placeholder={isMobile ? "Pergunte..." : "Digite sua pergunta..."}
                   disabled={isLoading}
-                  className={`flex-1 ${isMobile ? 'text-xs h-7' : 'text-xs h-8'}`}
+                  className={`flex-1 chat-input ${isMobile ? 'text-xs h-7' : 'text-xs h-8'}`}
                 />
                 <Button
                   onClick={sendMessage}

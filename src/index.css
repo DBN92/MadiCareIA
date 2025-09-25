@@ -526,3 +526,29 @@ button, input, select, textarea {
 .gradient-beige-warm {
   background: linear-gradient(135deg, #D4C4A8, #E6DDD4);
 }
+
+/* Prevenir zoom automático em inputs em dispositivos móveis */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform: translateZ(0);
+    -webkit-appearance: none;
+  }
+  
+  /* Específico para inputs do chat */
+  .chat-input,
+  input[placeholder*="Pergunte"],
+  input[placeholder*="Digite sua pergunta"] {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: 100%;
+    -webkit-appearance: none;
+    transform: translateZ(0);
+  }
+}
