@@ -201,7 +201,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      event_type: "drink" | "meal" | "med" | "bathroom" | "note" | "medication" | "drain" | "vital_signs" | "mood"
+      event_type: "drink" | "meal" | "med" | "bathroom" | "note" | "medication" | "drain" | "vital_signs" | "humor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -329,7 +329,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      event_type: ["drink", "meal", "med", "bathroom", "note", "medication", "drain", "vital_signs", "mood"],
+      event_type: ["drink", "meal", "med", "bathroom", "note", "medication", "drain", "vital_signs", "humor"],
     },
   },
 } as const

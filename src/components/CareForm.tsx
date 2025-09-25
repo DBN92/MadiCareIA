@@ -82,6 +82,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
   
   const [bathroomForm, setBathroomForm] = useState({
     type: "",
+    volume: "", // Campo opcional para volume de urina em ML
     time: getCurrentDateTime(),
     notes: ""
   })
@@ -97,7 +98,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
     notes: ""
   })
 
-  const [moodForm, setMoodForm] = useState({
+  const [humorForm, setHumorForm] = useState({
     moodScale: "",
     happinessScale: "",
     time: getCurrentDateTime(),
@@ -230,6 +231,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             occurred_at: new Date(bathroomForm.time).toISOString(),
             type: "bathroom",
             bathroom_type: bathroomForm.type,
+            volume_ml: bathroomForm.volume ? parseInt(bathroomForm.volume) : null,
             notes: bathroomForm.notes
           }
           break
@@ -257,21 +259,21 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           }
           break
 
-        case "mood":
-          if (!moodForm.moodScale) validationError = "Escala de humor é obrigatória"
-          else if (!moodForm.happinessScale) validationError = "Escala de felicidade é obrigatória"
+        case "humor":
+          if (!humorForm.moodScale) validationError = "Escala de humor é obrigatória"
+          else if (!humorForm.happinessScale) validationError = "Escala de felicidade é obrigatória"
           
           if (validationError) {
             throw new Error(validationError)
           }
           data = {
             ...data,
-            occurred_at: new Date(moodForm.time).toISOString(),
-            type: "mood",
-            mood_scale: parseInt(moodForm.moodScale),
-            happiness_scale: parseInt(moodForm.happinessScale),
-            mood_notes: moodForm.notes,
-            notes: moodForm.notes
+            occurred_at: new Date(humorForm.time).toISOString(),
+            type: "humor",
+            mood_scale: parseInt(humorForm.moodScale),
+            happiness_scale: parseInt(humorForm.happinessScale),
+            mood_notes: humorForm.notes,
+            notes: humorForm.notes
           }
           break
       }
@@ -293,13 +295,13 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           setDrainForm({ type: "", leftAmount: "", rightAmount: "", leftAspect: "", rightAspect: "", time: getCurrentDateTime(), notes: "" })
           break
         case "bathroom":
-          setBathroomForm({ type: "", time: getCurrentDateTime(), notes: "" })
+          setBathroomForm({ type: "", volume: "", time: getCurrentDateTime(), notes: "" })
           break
         case "vitals":
           setVitalSignsForm({ systolicBP: "", diastolicBP: "", heartRate: "", temperature: "", oxygenSaturation: "", respiratoryRate: "", time: getCurrentDateTime(), notes: "" })
           break
-        case "mood":
-          setMoodForm({ moodScale: "", happinessScale: "", time: getCurrentDateTime(), notes: "" })
+        case "humor":
+          setHumorForm({ moodScale: "", happinessScale: "", time: getCurrentDateTime(), notes: "" })
           break
       }
       
@@ -369,7 +371,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
               <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Sinais Vitais</span>
               <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Vitais</span>
             </TabsTrigger>
-            <TabsTrigger value="mood" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
+            <TabsTrigger value="humor" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
               <Smile className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
               <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Humor</span>
               <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Humor</span>
@@ -720,6 +722,21 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                   </Select>
                 </div>
                 
+                {/* Campo de volume opcional para urina */}
+                {(bathroomForm.type === "urina" || bathroomForm.type === "ambos") && (
+                  <div>
+                    <Label htmlFor="bathroom-volume" className="text-sm font-medium">Volume (ml) - Opcional</Label>
+                    <Input 
+                      id="bathroom-volume" 
+                      type="number" 
+                      placeholder="Ex: 250"
+                      value={bathroomForm.volume}
+                      onChange={(e) => setBathroomForm(prev => ({ ...prev, volume: e.target.value }))}
+                      className={`${isMobile ? 'h-12' : 'h-10 sm:h-11'}`}
+                    />
+                  </div>
+                )}
+                
                 <div>
                   <Label htmlFor="bathroom-time" className="text-sm font-medium">Horário</Label>
                   <Input 
@@ -891,12 +908,12 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           </TabsContent>
 
           {/* Humor/Felicidade */}
-          <TabsContent value="mood" className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
+          <TabsContent value="humor" className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
             <form onSubmit={handleSubmit} className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="mood-scale" className="text-sm font-medium">Escala de Humor (1-5) *</Label>
-                  <Select value={moodForm.moodScale} onValueChange={(value) => setMoodForm(prev => ({ ...prev, moodScale: value }))}>
+                  <Select value={humorForm.moodScale} onValueChange={(value) => setHumorForm(prev => ({ ...prev, moodScale: value }))}>
                     <SelectTrigger className={`${isMobile ? 'h-12' : 'h-10 sm:h-11'}`}>
                       <SelectValue placeholder="Selecione o humor" />
                     </SelectTrigger>
@@ -912,7 +929,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                 
                 <div>
                   <Label htmlFor="happiness-scale" className="text-sm font-medium">Escala de Felicidade (1-5) *</Label>
-                  <Select value={moodForm.happinessScale} onValueChange={(value) => setMoodForm(prev => ({ ...prev, happinessScale: value }))}>
+                  <Select value={humorForm.happinessScale} onValueChange={(value) => setHumorForm(prev => ({ ...prev, happinessScale: value }))}>
                     <SelectTrigger className={`${isMobile ? 'h-12' : 'h-10 sm:h-11'}`}>
                       <SelectValue placeholder="Selecione a felicidade" />
                     </SelectTrigger>
@@ -927,23 +944,23 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                 </div>
                 
                 <div>
-                  <Label htmlFor="mood-time" className="text-sm font-medium">Data e Hora *</Label>
+                  <Label htmlFor="humor-time" className="text-sm font-medium">Data e Hora *</Label>
                   <Input 
-                    id="mood-time" 
+                    id="humor-time" 
                     type="datetime-local" 
-                    value={moodForm.time}
-                    onChange={(e) => setMoodForm(prev => ({ ...prev, time: e.target.value }))}
+                    value={humorForm.time}
+                    onChange={(e) => setHumorForm(prev => ({ ...prev, time: e.target.value }))}
                     className={`${isMobile ? 'h-12' : 'h-10 sm:h-11'}`}
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="mood-notes" className="text-sm font-medium">Observações</Label>
+                  <Label htmlFor="humor-notes" className="text-sm font-medium">Observações</Label>
                   <Textarea 
-                    id="mood-notes" 
-                    placeholder="Observações sobre o humor/estado emocional do paciente..."
-                    value={moodForm.notes}
-                    onChange={(e) => setMoodForm(prev => ({ ...prev, notes: e.target.value }))}
+                    id="humor-notes" 
+                    placeholder="Observações sobre o humor..." 
+                    value={humorForm.notes}
+                    onChange={(e) => setHumorForm(prev => ({ ...prev, notes: e.target.value }))}
                     className={`${isMobile ? 'min-h-[80px]' : 'min-h-[80px] sm:min-h-[100px]'}`}
                   />
                 </div>

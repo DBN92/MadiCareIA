@@ -33,9 +33,9 @@ interface CareEvent {
   created_at: string;
   created_by: string;
   metadata?: any;
-  mood_scale?: number;
+  humor_scale?: number;
   happiness_scale?: number;
-  mood_notes?: string;
+  humor_notes?: string;
 }
 
 const FamilyDashboard: React.FC = () => {
@@ -89,7 +89,7 @@ const FamilyDashboard: React.FC = () => {
       meal: Utensils,
       note: FileText,
       bathroom: Heart,
-      mood: Smile
+      humor: Smile
     };
     const Icon = icons[type as keyof typeof icons] || FileText;
     return <Icon className="h-4 w-4" />;
@@ -100,26 +100,26 @@ const FamilyDashboard: React.FC = () => {
       drink: 'text-blue-600',
       med: 'text-green-600',
       meal: 'text-orange-600',
-      note: 'text-purple-600',
-      bathroom: 'text-pink-600',
-      mood: 'text-yellow-600'
+      note: 'text-gray-600',
+      bathroom: 'text-purple-600',
+      humor: 'text-yellow-600'
     };
     return colors[type as keyof typeof colors] || 'text-gray-600';
   };
 
-  const getBadgeColor = (type: string) => {
+  const getTypeBadgeColor = (type: string) => {
     const colors = {
       drink: 'bg-blue-100 text-blue-800',
       med: 'bg-green-100 text-green-800',
       meal: 'bg-orange-100 text-orange-800',
-      note: 'bg-purple-100 text-purple-800',
-      bathroom: 'bg-pink-100 text-pink-800',
-      mood: 'bg-yellow-100 text-yellow-800'
+      note: 'bg-gray-100 text-gray-800',
+      bathroom: 'bg-purple-100 text-purple-800',
+      humor: 'bg-yellow-100 text-yellow-800'
     };
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const getMoodEmoji = (scale: number) => {
+  const getHumorEmoji = (scale: number) => {
     const emojis = {
       1: '😢',
       2: '😔',
@@ -183,12 +183,12 @@ const FamilyDashboard: React.FC = () => {
     medications: todayEvents.filter(e => e.type === 'med').length,
     meals: todayEvents.filter(e => e.type === 'meal').length,
     notes: todayEvents.filter(e => e.type === 'note').length,
-    mood: todayEvents.filter(e => e.type === 'mood').length
+    humor: todayEvents.filter(e => e.type === 'humor').length
   };
 
-  // Get latest mood data
-  const latestMoodEvent = todayEvents
-    .filter(e => e.type === 'mood')
+  // Get latest humor data
+  const latestHumorEvent = todayEvents
+    .filter(e => e.type === 'humor')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   const renderDashboard = () => (
@@ -219,8 +219,8 @@ const FamilyDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Latest Mood Status */}
-      {latestMoodEvent && (
+      {/* Latest Humor Status */}
+      {latestHumorEvent && (
         <Card className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -229,30 +229,30 @@ const FamilyDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold">Estado Emocional</h3>
                   <p className="text-yellow-100 text-sm">
-                    Última atualização: {new Date(latestMoodEvent.created_at).toLocaleTimeString()}
+                    Última atualização: {new Date(latestHumorEvent.created_at).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm">Humor:</span>
-                  <span className="text-2xl">{getMoodEmoji(latestMoodEvent.mood_scale || 3)}</span>
-                  <span className="text-lg font-bold">{latestMoodEvent.mood_scale}/5</span>
+                  <span className="text-2xl">{getHumorEmoji(latestHumorEvent.humor_scale || 3)}</span>
+                <span className="text-lg font-bold">{latestHumorEvent.humor_scale}/5</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Felicidade:</span>
-                  <span className="text-2xl">{getHappinessEmoji(latestMoodEvent.happiness_scale || 3)}</span>
-                  <span className="text-lg font-bold">{latestMoodEvent.happiness_scale}/5</span>
+                  <span className="text-2xl">{getHappinessEmoji(latestHumorEvent.happiness_scale || 3)}</span>
+                  <span className="text-lg font-bold">{latestHumorEvent.happiness_scale}/5</span>
                 </div>
               </div>
             </div>
-            {latestMoodEvent.mood_notes && (
-              <div className="mt-3 p-2 bg-white/20 rounded-lg">
-                <p className="text-sm text-yellow-100">
-                  <strong>Observações:</strong> {latestMoodEvent.mood_notes}
-                </p>
-              </div>
-            )}
+            {latestHumorEvent.humor_notes && (
+                <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    <strong>Observações:</strong> {latestHumorEvent.humor_notes}
+                  </p>
+                </div>
+              )}
           </CardContent>
         </Card>
       )}
@@ -264,7 +264,7 @@ const FamilyDashboard: React.FC = () => {
           { label: 'Medicamentos', value: stats.medications, icon: Pill, color: 'green' },
           { label: 'Refeições', value: stats.meals, icon: Utensils, color: 'orange' },
           { label: 'Anotações', value: stats.notes, icon: FileText, color: 'purple' },
-          { label: 'Humor', value: stats.mood, icon: Smile, color: 'yellow' }
+          { label: 'Humor', value: stats.humor, icon: Smile, color: 'yellow' }
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-3">
             <div className="flex items-center gap-2">
@@ -314,14 +314,14 @@ const FamilyDashboard: React.FC = () => {
                   {getTypeIcon(event.type)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  {event.type === 'mood' ? (
+                  {event.type === 'humor' ? (
                     <div>
                       <p className="text-sm font-medium">
-                        Humor: {getMoodEmoji(event.mood_scale || 3)} {event.mood_scale}/5 • 
+                        Humor: {getHumorEmoji(event.humor_scale || 3)} {event.humor_scale}/5 • 
                         Felicidade: {getHappinessEmoji(event.happiness_scale || 3)} {event.happiness_scale}/5
                       </p>
-                      {event.mood_notes && (
-                        <p className="text-xs text-gray-500 truncate">{event.mood_notes}</p>
+                      {event.humor_notes && (
+                        <p className="text-xs text-gray-500 truncate">{event.humor_notes}</p>
                       )}
                     </div>
                   ) : (
@@ -331,8 +331,8 @@ const FamilyDashboard: React.FC = () => {
                     {new Date(event.created_at).toLocaleTimeString()}
                   </p>
                 </div>
-                <Badge className={`text-xs ${getBadgeColor(event.type)}`}>
-                  {event.type === 'mood' ? 'humor' : event.type}
+                <Badge className={`text-xs ${getTypeBadgeColor(event.type)}`}>
+                  {event.type === 'humor' ? 'humor' : event.type}
                 </Badge>
               </div>
             ))}

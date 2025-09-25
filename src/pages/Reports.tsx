@@ -31,172 +31,171 @@ const Reports = () => {
     ? events.filter(event => event.patient_id === selectedPatientId)
     : []
 
-  // Agrupar dados por dia e unidade de medida
+  // Função para processar dados diários
   const getDailyData = () => {
-    if (!patientEvents.length) return { volumeData: [], percentageData: [], dosageData: [], countData: [] }
-
-    const dailyStats: { [key: string]: any } = {}
-
+    const dailyStats: Record<string, any> = {}
+    
     patientEvents.forEach(event => {
-      const date = new Date(event.occurred_at).toLocaleDateString('pt-BR')
+      const date = event.occurred_at.split('T')[0]
       
       if (!dailyStats[date]) {
         dailyStats[date] = {
-          date,
-          // Dados em ML (volume)
-          liquidosML: 0,
-          drenosML: 0,
-          // Dados em % (percentual)
           alimentosPercent: 0,
           alimentosCount: 0,
-          // Dados de dosagem (medicamentos)
           medicamentosCount: 0,
-          // Dados de contagem (banheiro)
           banheiroCount: 0,
-          // Totais por categoria
           totalLiquidos: 0,
-          totalMedicamentos: 0,
+          liquidosML: 0,
+          drenosML: 0,
+          urinaML: 0,
+          totalBanheiro: 0,
           totalAlimentos: 0,
+          totalMedicamentos: 0,
           totalDrenos: 0,
-          totalBanheiro: 0
+          totalUrina: 0
         }
       }
 
-      const eventType = event.type?.toLowerCase() || ''
-      const notes = event.notes?.toLowerCase() || ''
-       
-      if (eventType === 'drink' || notes.includes('líquido') || notes.includes('hidratação') || notes.includes('soro')) {
-        dailyStats[date].liquidosML += event.volume_ml || 0
-        dailyStats[date].totalLiquidos += 1
-      } else if (eventType === 'med' || notes.includes('medicamento') || notes.includes('dose') || notes.includes('remédio')) {
-        dailyStats[date].medicamentosCount += 1
-        dailyStats[date].totalMedicamentos += 1
-      } else if (eventType === 'meal' || notes.includes('alimento') || notes.includes('dieta') || notes.includes('alimentação')) {
-        // Extrair percentual da descrição da refeição
-        const mealDesc = event.meal_desc || ''
-        const percentMatch = mealDesc.match(/(\d+)%/)
-        const percent = percentMatch ? parseInt(percentMatch[1]) : 0
-        dailyStats[date].alimentosPercent += percent
-        dailyStats[date].alimentosCount += 1
-        dailyStats[date].totalAlimentos += 1
-      } else if (eventType === 'note' || notes.includes('dreno') || notes.includes('drenagem')) {
-        dailyStats[date].drenosML += event.volume_ml || 0
-        dailyStats[date].totalDrenos += 1
-      } else if (eventType === 'bathroom' || notes.includes('banheiro') || notes.includes('eliminação') || notes.includes('urina') || notes.includes('fezes')) {
-        dailyStats[date].banheiroCount += 1
-        dailyStats[date].totalBanheiro += 1
+      switch (event.type) {
+        case 'meal':
+          dailyStats[date].alimentosPercent += event.consumption_percentage || 0
+          dailyStats[date].alimentosCount += 1
+          dailyStats[date].totalAlimentos += 1
+          break
+        case 'med':
+          dailyStats[date].medicamentosCount += 1
+          dailyStats[date].totalMedicamentos += 1
+          break
+        case 'bathroom':
+          dailyStats[date].banheiroCount += 1
+          dailyStats[date].totalBanheiro += 1
+          if (event.bathroom_type === 'urina' && event.volume_ml) {
+            dailyStats[date].urinaML += event.volume_ml
+            dailyStats[date].totalUrina += event.volume_ml
+          }
+          break
+        case 'drink':
+          dailyStats[date].liquidosML += event.volume_ml || 0
+          dailyStats[date].totalLiquidos += event.volume_ml || 0
+          break
+        case 'note':
+          if (event.notes?.includes('dreno')) {
+            dailyStats[date].drenosML += event.volume_ml || 0
+            dailyStats[date].totalDrenos += event.volume_ml || 0
+          }
+          break
       }
     })
 
-    const dataArray = Object.values(dailyStats).sort((a: any, b: any) => 
-      new Date(a.date.split('/').reverse().join('-')).getTime() - 
-      new Date(b.date.split('/').reverse().join('-')).getTime()
-    )
+    // Converter para array e calcular médias
+    const dataArray = Object.entries(dailyStats).map(([date, stats]) => ({
+      date,
+      ...stats,
+      alimentosPercent: stats.alimentosCount > 0 ? Math.round(stats.alimentosPercent / stats.alimentosCount) : 0
+    })).sort((a, b) => new Date(a.date.split('/').reverse().join('-')).getTime() - new Date(b.date.split('/').reverse().join('-')).getTime())
 
-    // Calcular médias para cada tipo
-    const totalDays = dataArray.length
-    
-    const volumeData = dataArray.map((day: any) => {
-      const totalML = day.liquidosML + day.drenosML
-      const avgML = totalDays > 0 ? dataArray.reduce((sum: number, d: any) => sum + d.liquidosML + d.drenosML, 0) / totalDays : 0
-      return {
-        date: day.date,
-        liquidos: day.liquidosML,
-        drenos: day.drenosML,
-        media: Math.round(avgML * 100) / 100
-      }
-    })
+    // Calcular médias para cada tipo de dado
+    const volumeData = dataArray.map(day => ({
+      date: day.date,
+      liquidos: day.liquidosML,
+      drenos: day.drenosML,
+      media: Math.round((dataArray.reduce((sum, d) => sum + d.liquidosML + d.drenosML, 0) / dataArray.length) || 0)
+    }))
 
-    const percentageData = dataArray.map((day: any) => {
-      const avgPercent = day.alimentosCount > 0 ? day.alimentosPercent / day.alimentosCount : 0
-      const totalAvgPercent = totalDays > 0 ? dataArray.reduce((sum: number, d: any) => {
-        const dayAvg = d.alimentosCount > 0 ? d.alimentosPercent / d.alimentosCount : 0
-        return sum + dayAvg
-      }, 0) / totalDays : 0
-      return {
-        date: day.date,
-        alimentos: Math.round(avgPercent * 100) / 100,
-        media: Math.round(totalAvgPercent * 100) / 100
-      }
-    })
+    const percentageData = dataArray.map(day => ({
+      date: day.date,
+      alimentos: day.alimentosPercent,
+      media: Math.round((dataArray.reduce((sum, d) => sum + d.alimentosPercent, 0) / dataArray.length) || 0)
+    }))
 
-    const dosageData = dataArray.map((day: any) => {
-      const avgDosage = totalDays > 0 ? dataArray.reduce((sum: number, d: any) => sum + d.medicamentosCount, 0) / totalDays : 0
-      return {
-        date: day.date,
-        medicamentos: day.medicamentosCount,
-        media: Math.round(avgDosage * 100) / 100
-      }
-    })
+    const dosageData = dataArray.map(day => ({
+      date: day.date,
+      medicamentos: day.medicamentosCount,
+      media: Math.round((dataArray.reduce((sum, d) => sum + d.medicamentosCount, 0) / dataArray.length) || 0)
+    }))
 
-    const countData = dataArray.map((day: any) => {
-      const avgCount = totalDays > 0 ? dataArray.reduce((sum: number, d: any) => sum + d.banheiroCount, 0) / totalDays : 0
-      return {
-        date: day.date,
-        banheiro: day.banheiroCount,
-        media: Math.round(avgCount * 100) / 100
-      }
-    })
+    const countData = dataArray.map(day => ({
+      date: day.date,
+      banheiro: day.banheiroCount,
+      media: Math.round((dataArray.reduce((sum, d) => sum + d.banheiroCount, 0) / dataArray.length) || 0)
+    }))
 
-    return { volumeData, percentageData, dosageData, countData }
+    const urinaData = dataArray.map(day => ({
+      date: day.date,
+      urina: day.urinaML,
+      media: Math.round((dataArray.reduce((sum, d) => sum + d.urinaML, 0) / dataArray.length) || 0)
+    }))
+
+    return { volumeData, percentageData, dosageData, countData, urinaData }
   }
 
-  const { volumeData, percentageData, dosageData, countData } = getDailyData()
-  const selectedPatient = patients.find(p => p.id === selectedPatientId)
+  const { volumeData, percentageData, dosageData, countData, urinaData } = getDailyData()
 
+  // Configuração de cores para os gráficos
   const chartConfig = {
     liquidos: {
       label: "Líquidos",
-      color: "#3b82f6", // Azul
+      color: "#3b82f6"
     },
-    medicamentos: {
-      label: "Medicamentos", 
-      color: "#ef4444", // Vermelho
+    drenos: {
+      label: "Drenos", 
+      color: "#ef4444"
     },
     alimentos: {
       label: "Alimentos",
-      color: "#22c55e", // Verde
+      color: "#22c55e"
     },
-    drenos: {
-      label: "Drenos",
-      color: "#f59e0b", // Amarelo/Laranja
+    medicamentos: {
+      label: "Medicamentos",
+      color: "#a855f7"
     },
     banheiro: {
-      label: "Banheiro",
-      color: "#8b5cf6", // Roxo
+      label: "Eliminações",
+      color: "#f59e0b"
+    },
+    urina: {
+      label: "Volume Urina",
+      color: "#06b6d4"
     },
     total: {
       label: "Total",
-      color: "#6366f1", // Índigo
+      color: "#6366f1"
     },
     media: {
       label: "Média",
-      color: "#dc2626", // Vermelho escuro
+      color: "#64748b"
     }
   }
 
+  // Função para exportar PDF
   const handleExportPDF = async () => {
-    if (!selectedPatientId || !selectedPatient) return
-    
+    if (!selectedPatientId) {
+      toast({
+        title: "Erro",
+        description: "Selecione um paciente primeiro",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsExporting(true)
     
     try {
-      // Criar elemento temporário com o conteúdo do relatório
-      const reportElement = document.getElementById('report-content')
-      if (!reportElement) {
-        throw new Error('Elemento do relatório não encontrado')
+      const element = document.getElementById('reports-content')
+      if (!element) {
+        throw new Error('Elemento de relatórios não encontrado')
       }
 
-      // Capturar o elemento como canvas
-      const canvas = await html2canvas(reportElement, {
+      const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff'
       })
 
-      // Criar PDF
+      const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
+      
       const imgWidth = 210
       const pageHeight = 295
       const imgHeight = (canvas.height * imgWidth) / canvas.width
@@ -204,22 +203,9 @@ const Reports = () => {
 
       let position = 0
 
-      // Adicionar cabeçalho
-      pdf.setFontSize(20)
-      pdf.text(`Relatório de Cuidados - ${selectedPatient.full_name}`, 20, 20)
-      pdf.setFontSize(12)
-      pdf.text(`Leito: ${selectedPatient.bed}`, 20, 30)
-      pdf.text(`Data de geração: ${new Date().toLocaleDateString('pt-BR')}`, 20, 40)
-      pdf.text(`Total de registros: ${patientEvents.length}`, 20, 50)
-      
-      position = 60
-
-      // Adicionar imagem do gráfico
-      const imgData = canvas.toDataURL('image/png')
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
       heightLeft -= pageHeight
 
-      // Adicionar páginas extras se necessário
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight
         pdf.addPage()
@@ -227,19 +213,20 @@ const Reports = () => {
         heightLeft -= pageHeight
       }
 
-      // Salvar PDF
-      const fileName = `relatorio_${selectedPatient.full_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+      const selectedPatient = patients.find(p => p.id === selectedPatientId)
+      const fileName = `relatorio-${selectedPatient?.full_name || 'paciente'}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`
+      
       pdf.save(fileName)
       
       toast({
         title: "Sucesso",
-        description: "Relatório exportado com sucesso!"
+        description: "Relatório exportado com sucesso!",
       })
     } catch (error) {
       console.error('Erro ao exportar PDF:', error)
       toast({
         title: "Erro",
-        description: "Erro ao exportar relatório para PDF",
+        description: "Erro ao exportar relatório",
         variant: "destructive"
       })
     } finally {
@@ -273,29 +260,22 @@ const Reports = () => {
         </Button>
       </div>
 
-      {/* Seletor de Paciente com glassmorphism */}
-      <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
-        <CardHeader className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-t-lg">
-          <CardTitle className="flex items-center gap-2 text-gray-800">
+      {/* Seletor de Paciente */}
+      <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-xl">
             <User className="h-5 w-5 text-blue-600" />
             Selecionar Paciente
           </CardTitle>
-          <CardDescription>
-            Escolha um paciente para visualizar seus dados de cuidados
-          </CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent>
           <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-            <SelectTrigger className="w-full backdrop-blur-sm bg-white/50 border-white/30 hover:bg-white/70 transition-all duration-200">
-              <SelectValue placeholder="Selecione um paciente" />
+            <SelectTrigger className="w-full bg-white/50 border-white/30">
+              <SelectValue placeholder="Escolha um paciente para visualizar os relatórios" />
             </SelectTrigger>
-            <SelectContent className="backdrop-blur-md bg-white/90 border-white/20">
+            <SelectContent>
               {patients.map((patient) => (
-                <SelectItem 
-                  key={patient.id} 
-                  value={patient.id}
-                  className="hover:bg-blue-50/50 transition-colors duration-200"
-                >
+                <SelectItem key={patient.id} value={patient.id}>
                   {patient.full_name} - Leito {patient.bed}
                 </SelectItem>
               ))}
@@ -304,48 +284,86 @@ const Reports = () => {
         </CardContent>
       </Card>
 
-      {/* Informações do Paciente Selecionado */}
-      {selectedPatient && (
-        <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.01]">
-          <CardHeader className="bg-gradient-to-r from-green-50/50 to-blue-50/50 rounded-t-lg">
-            <CardTitle>Informações do Paciente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Nome</p>
-                <p className="text-lg font-semibold">{selectedPatient.full_name}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Leito</p>
-                <p className="text-lg font-semibold">{selectedPatient.bed}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Registros</p>
-                <p className="text-lg font-semibold">{patientEvents.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Conteúdo dos Relatórios */}
+      <div id="reports-content">
+        {selectedPatientId && patientEvents.length > 0 ? (
+          <div className="space-y-6">
+            {/* Estatísticas Resumidas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total de Eventos</p>
+                      <p className="text-2xl font-bold">{patientEvents.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-      {/* Gráfico */}
-      {selectedPatientId && (volumeData.length > 0 || percentageData.length > 0 || dosageData.length > 0 || countData.length > 0) ? (
-        <div id="report-content" className="w-full space-y-6">
-          {/* Gráfico de Volume (ML) - Líquidos e Drenos */}
-          {volumeData.length > 0 && (
-            <Card className="backdrop-blur-sm bg-white/70 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.01]">
-              <CardHeader className="bg-gradient-to-r from-blue-50/50 to-cyan-50/50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-gray-800">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
-                  Volume em ML - Líquidos e Drenos
-                </CardTitle>
-                <CardDescription>
-                  Volumes registrados em mililitros por dia
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="backdrop-blur-sm bg-white/30 rounded-xl p-4 border border-white/20">
+              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <BarChart3 className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Dias com Registros</p>
+                      <p className="text-2xl font-bold">{volumeData.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Período</p>
+                      <p className="text-2xl font-bold">
+                        {volumeData.length > 0 ? `${volumeData.length}d` : '0d'}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <FileText className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Média Diária</p>
+                      <p className="text-2xl font-bold">
+                        {volumeData.length > 0 ? Math.round(patientEvents.length / volumeData.length) : 0}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Gráfico de Volume (ml) - Líquidos e Drenos */}
+            {volumeData.length > 0 && volumeData.some(day => day.liquidos > 0 || day.drenos > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Volume em ML - Líquidos e Drenos
+                  </CardTitle>
+                  <CardDescription>
+                    Volume de líquidos ingeridos e drenos por dia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <ResponsiveContainer width="100%" height={400}>
                     <ComposedChart data={volumeData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -361,11 +379,10 @@ const Reports = () => {
                        />
                        <Tooltip 
                          contentStyle={{ 
-                           backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                           border: '1px solid rgba(255, 255, 255, 0.3)',
-                           borderRadius: '12px',
-                           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                           backdropFilter: 'blur(10px)'
+                           backgroundColor: '#fff', 
+                           border: '1px solid #e0e0e0',
+                           borderRadius: '8px',
+                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                          }}
                          cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
                          formatter={(value, name) => [`${value}ml`, name]}
@@ -378,7 +395,7 @@ const Reports = () => {
                          dataKey="liquidos" 
                          fill={chartConfig.liquidos.color} 
                          name={chartConfig.liquidos.label} 
-                         radius={[4, 4, 0, 0]}
+                         radius={[2, 2, 0, 0]}
                        >
                          <LabelList 
                            dataKey="liquidos" 
@@ -391,7 +408,7 @@ const Reports = () => {
                          dataKey="drenos" 
                          fill={chartConfig.drenos.color} 
                          name={chartConfig.drenos.label} 
-                         radius={[4, 4, 0, 0]}
+                         radius={[2, 2, 0, 0]}
                        >
                          <LabelList 
                            dataKey="drenos" 
@@ -400,252 +417,320 @@ const Reports = () => {
                            style={{ fontSize: '12px', fill: '#666' }}
                          />
                        </Bar>
-                     <Line 
-                       type="monotone" 
-                       dataKey="media" 
-                       stroke={chartConfig.media.color}
-                       strokeWidth={3}
-                       strokeDasharray="5 5"
-                       dot={false}
-                       name="Média ML"
-                     />
-                   </ComposedChart>
+                       <Line 
+                         type="monotone" 
+                         dataKey="media" 
+                         stroke={chartConfig.media.color}
+                         strokeWidth={3}
+                         strokeDasharray="5 5"
+                         dot={false}
+                         name="Média ML"
+                       />
+                     </ComposedChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Gráfico de Percentual (%) - Alimentos */}
-          {percentageData.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Consumo em % - Alimentos
-                </CardTitle>
-                <CardDescription>
-                  Percentual médio de consumo de alimentos por dia
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={percentageData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                     <XAxis 
-                       dataKey="date" 
-                       tick={{ fontSize: 12 }}
-                       axisLine={{ stroke: '#e0e0e0' }}
-                     />
-                     <YAxis 
-                       tick={{ fontSize: 12 }}
-                       axisLine={{ stroke: '#e0e0e0' }}
-                       label={{ value: 'Percentual (%)', angle: -90, position: 'insideLeft' }}
-                       domain={[0, 100]}
-                     />
-                     <Tooltip 
-                       contentStyle={{ 
-                         backgroundColor: '#fff', 
-                         border: '1px solid #e0e0e0',
-                         borderRadius: '8px',
-                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                       }}
-                       cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
-                       formatter={(value, name) => [`${value}%`, name]}
-                     />
-                     <Legend 
-                       wrapperStyle={{ paddingTop: '20px' }}
-                       iconType="rect"
-                     />
-                     <Bar 
-                       dataKey="alimentos" 
-                       fill={chartConfig.alimentos.color} 
-                       name={chartConfig.alimentos.label} 
-                       radius={[2, 2, 0, 0]}
-                     >
-                       <LabelList 
+            {/* Gráfico de Percentual - Alimentos */}
+            {percentageData.length > 0 && percentageData.some(day => day.alimentos > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Percentual de Consumo - Alimentos
+                  </CardTitle>
+                  <CardDescription>
+                    Percentual médio de alimentos consumidos por dia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <ComposedChart data={percentageData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
+                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                       <XAxis 
+                         dataKey="date" 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                       />
+                       <YAxis 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                         label={{ value: 'Percentual (%)', angle: -90, position: 'insideLeft' }}
+                         domain={[0, 100]}
+                       />
+                       <Tooltip 
+                         contentStyle={{ 
+                           backgroundColor: '#fff', 
+                           border: '1px solid #e0e0e0',
+                           borderRadius: '8px',
+                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                         }}
+                         cursor={{ fill: 'rgba(34, 197, 94, 0.1)' }}
+                         formatter={(value, name) => [`${value}%`, name]}
+                       />
+                       <Legend 
+                         wrapperStyle={{ paddingTop: '20px' }}
+                         iconType="rect"
+                       />
+                       <Bar 
                          dataKey="alimentos" 
-                         position="top" 
-                         formatter={(value) => value > 0 ? `${value}%` : ''}
-                         style={{ fontSize: '12px', fill: '#666' }}
+                         fill={chartConfig.alimentos.color} 
+                         name={chartConfig.alimentos.label} 
+                         radius={[2, 2, 0, 0]}
+                       >
+                         <LabelList 
+                           dataKey="alimentos" 
+                           position="top" 
+                           formatter={(value) => value > 0 ? `${value}%` : ''}
+                           style={{ fontSize: '12px', fill: '#666' }}
+                         />
+                       </Bar>
+                       <Line 
+                         type="monotone" 
+                         dataKey="media" 
+                         stroke={chartConfig.media.color}
+                         strokeWidth={3}
+                         strokeDasharray="5 5"
+                         dot={false}
+                         name="Média %"
                        />
-                     </Bar>
-                     <Line 
-                       type="monotone" 
-                       dataKey="media" 
-                       stroke={chartConfig.media.color}
-                       strokeWidth={3}
-                       strokeDasharray="5 5"
-                       dot={false}
-                       name="Média %"
-                     />
-                   </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
+                     </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Gráfico de Contagem - Medicamentos */}
-          {dosageData.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Quantidade de Doses - Medicamentos
-                </CardTitle>
-                <CardDescription>
-                  Número de doses de medicamentos administradas por dia
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={dosageData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                     <XAxis 
-                       dataKey="date" 
-                       tick={{ fontSize: 12 }}
-                       axisLine={{ stroke: '#e0e0e0' }}
-                     />
-                     <YAxis 
-                       tick={{ fontSize: 12 }}
-                       axisLine={{ stroke: '#e0e0e0' }}
-                       label={{ value: 'Número de Doses', angle: -90, position: 'insideLeft' }}
-                     />
-                     <Tooltip 
-                       contentStyle={{ 
-                         backgroundColor: '#fff', 
-                         border: '1px solid #e0e0e0',
-                         borderRadius: '8px',
-                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                       }}
-                       cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
-                       formatter={(value, name) => [`${value} doses`, name]}
-                     />
-                     <Legend 
-                       wrapperStyle={{ paddingTop: '20px' }}
-                       iconType="rect"
-                     />
-                     <Bar 
-                       dataKey="medicamentos" 
-                       fill={chartConfig.medicamentos.color} 
-                       name={chartConfig.medicamentos.label} 
-                       radius={[2, 2, 0, 0]}
-                     >
-                       <LabelList 
+            {/* Gráfico de Contagem - Medicamentos */}
+            {dosageData.length > 0 && dosageData.some(day => day.medicamentos > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Contagem - Medicamentos
+                  </CardTitle>
+                  <CardDescription>
+                    Número de medicamentos administrados por dia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <ComposedChart data={dosageData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
+                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                       <XAxis 
+                         dataKey="date" 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                       />
+                       <YAxis 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                         label={{ value: 'Quantidade', angle: -90, position: 'insideLeft' }}
+                       />
+                       <Tooltip 
+                         contentStyle={{ 
+                           backgroundColor: '#fff', 
+                           border: '1px solid #e0e0e0',
+                           borderRadius: '8px',
+                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                         }}
+                         cursor={{ fill: 'rgba(168, 85, 247, 0.1)' }}
+                         formatter={(value, name) => [value, name]}
+                       />
+                       <Legend 
+                         wrapperStyle={{ paddingTop: '20px' }}
+                         iconType="rect"
+                       />
+                       <Bar 
                          dataKey="medicamentos" 
-                         position="top" 
-                         formatter={(value) => value > 0 ? value : ''}
-                         style={{ fontSize: '12px', fill: '#666' }}
+                         fill={chartConfig.medicamentos.color} 
+                         name={chartConfig.medicamentos.label} 
+                         radius={[2, 2, 0, 0]}
+                       >
+                         <LabelList 
+                           dataKey="medicamentos" 
+                           position="top" 
+                           formatter={(value) => value > 0 ? value : ''}
+                           style={{ fontSize: '12px', fill: '#666' }}
+                         />
+                       </Bar>
+                       <Line 
+                         type="monotone" 
+                         dataKey="media" 
+                         stroke={chartConfig.media.color}
+                         strokeWidth={3}
+                         strokeDasharray="5 5"
+                         dot={false}
+                         name="Média Medicamentos"
                        />
-                     </Bar>
-                     <Line 
-                       type="monotone" 
-                       dataKey="media" 
-                       stroke={chartConfig.media.color}
-                       strokeWidth={3}
-                       strokeDasharray="5 5"
-                       dot={false}
-                       name="Média Doses"
-                     />
-                   </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
+                     </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Gráfico de Contagem - Banheiro */}
-          {countData.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Eliminações - Banheiro
-                </CardTitle>
-                <CardDescription>
-                  Número de eliminações registradas por dia
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <ComposedChart data={countData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                     <XAxis 
-                       dataKey="date" 
-                       tick={{ fontSize: 12 }}
-                       axisLine={{ stroke: '#e0e0e0' }}
-                     />
-                     <YAxis 
-                       tick={{ fontSize: 12 }}
-                       axisLine={{ stroke: '#e0e0e0' }}
-                       label={{ value: 'Número de Eliminações', angle: -90, position: 'insideLeft' }}
-                     />
-                     <Tooltip 
-                       contentStyle={{ 
-                         backgroundColor: '#fff', 
-                         border: '1px solid #e0e0e0',
-                         borderRadius: '8px',
-                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                       }}
-                       cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
-                       formatter={(value, name) => [`${value} eliminações`, name]}
-                     />
-                     <Legend 
-                       wrapperStyle={{ paddingTop: '20px' }}
-                       iconType="rect"
-                     />
-                     <Bar 
-                       dataKey="banheiro" 
-                       fill={chartConfig.banheiro.color} 
-                       name={chartConfig.banheiro.label} 
-                       radius={[2, 2, 0, 0]}
-                     >
-                       <LabelList 
-                         dataKey="banheiro" 
-                         position="top" 
-                         formatter={(value) => value > 0 ? value : ''}
-                         style={{ fontSize: '12px', fill: '#666' }}
+            {/* Gráfico de Contagem - Eliminações */}
+            {countData.length > 0 && countData.some(day => day.banheiro > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Contagem - Eliminações
+                  </CardTitle>
+                  <CardDescription>
+                    Número de eliminações registradas por dia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <ComposedChart data={countData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
+                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                       <XAxis 
+                         dataKey="date" 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
                        />
-                     </Bar>
-                     <Line 
-                       type="monotone" 
-                       dataKey="media" 
-                       stroke={chartConfig.media.color}
-                       strokeWidth={3}
-                       strokeDasharray="5 5"
-                       dot={false}
-                       name="Média Eliminações"
-                     />
-                   </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      ) : selectedPatientId ? (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum dado encontrado</h3>
-              <p className="text-muted-foreground">
-                Este paciente ainda não possui registros de cuidados.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Selecione um Paciente</h3>
-              <p className="text-muted-foreground">
-                Escolha um paciente acima para visualizar seus relatórios de cuidados.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                       <YAxis 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                         label={{ value: 'Quantidade', angle: -90, position: 'insideLeft' }}
+                       />
+                       <Tooltip 
+                         contentStyle={{ 
+                           backgroundColor: '#fff', 
+                           border: '1px solid #e0e0e0',
+                           borderRadius: '8px',
+                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                         }}
+                         cursor={{ fill: 'rgba(245, 158, 11, 0.1)' }}
+                         formatter={(value, name) => [value, name]}
+                       />
+                       <Legend 
+                         wrapperStyle={{ paddingTop: '20px' }}
+                         iconType="rect"
+                       />
+                       <Bar 
+                         dataKey="banheiro" 
+                         fill={chartConfig.banheiro.color} 
+                         name={chartConfig.banheiro.label} 
+                         radius={[2, 2, 0, 0]}
+                       >
+                         <LabelList 
+                           dataKey="banheiro" 
+                           position="top" 
+                           formatter={(value) => value > 0 ? value : ''}
+                           style={{ fontSize: '12px', fill: '#666' }}
+                         />
+                       </Bar>
+                       <Line 
+                         type="monotone" 
+                         dataKey="media" 
+                         stroke={chartConfig.media.color}
+                         strokeWidth={3}
+                         strokeDasharray="5 5"
+                         dot={false}
+                         name="Média Eliminações"
+                       />
+                     </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Gráfico de Volume (ml) - Urina */}
+            {urinaData.length > 0 && urinaData.some(day => day.urina > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Volume em ML - Urina
+                  </CardTitle>
+                  <CardDescription>
+                    Volume de urina registrado por dia (quando informado)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <ComposedChart data={urinaData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
+                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                       <XAxis 
+                         dataKey="date" 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                       />
+                       <YAxis 
+                         tick={{ fontSize: 12 }}
+                         axisLine={{ stroke: '#e0e0e0' }}
+                         label={{ value: 'Volume (ml)', angle: -90, position: 'insideLeft' }}
+                       />
+                       <Tooltip 
+                         contentStyle={{ 
+                           backgroundColor: '#fff', 
+                           border: '1px solid #e0e0e0',
+                           borderRadius: '8px',
+                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                         }}
+                         cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
+                         formatter={(value, name) => [`${value}ml`, name]}
+                       />
+                       <Legend 
+                         wrapperStyle={{ paddingTop: '20px' }}
+                         iconType="rect"
+                       />
+                       <Bar 
+                         dataKey="urina" 
+                         fill={chartConfig.urina.color} 
+                         name={chartConfig.urina.label} 
+                         radius={[2, 2, 0, 0]}
+                       >
+                         <LabelList 
+                           dataKey="urina" 
+                           position="top" 
+                           formatter={(value) => value > 0 ? `${value}ml` : ''}
+                           style={{ fontSize: '12px', fill: '#666' }}
+                         />
+                       </Bar>
+                       <Line 
+                         type="monotone" 
+                         dataKey="media" 
+                         stroke={chartConfig.media.color}
+                         strokeWidth={3}
+                         strokeDasharray="5 5"
+                         dot={false}
+                         name="Média ML"
+                       />
+                     </ComposedChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        ) : selectedPatientId ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum dado encontrado</h3>
+                <p className="text-muted-foreground">
+                  Este paciente ainda não possui registros de cuidados.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Selecione um Paciente</h3>
+                <p className="text-muted-foreground">
+                  Escolha um paciente acima para visualizar seus relatórios de cuidados.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }

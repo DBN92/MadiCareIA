@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client'
 import { Tables } from '@/integrations/supabase/types'
 
 export type CareEvent = Tables<'events'> & {
-  mood_scale?: number
+  humor_scale?: number
   happiness_scale?: number
-  mood_notes?: string
+  humor_notes?: string
 }
 
 export const useCareEvents = (patientId?: string) => {
