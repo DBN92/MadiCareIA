@@ -48,131 +48,112 @@ const Reports = () => {
           liquidosML: 0,
           drenosML: 0,
           urinaML: 0,
-          totalBanheiro: 0,
-          totalAlimentos: 0,
-          totalMedicamentos: 0,
-          totalDrenos: 0,
-          totalUrina: 0
+          humorScore: 0,
+          humorCount: 0,
+          sinaisVitais: {
+            pressaoSistolica: 0,
+            pressaoDiastolica: 0,
+            frequenciaCardiaca: 0,
+            temperatura: 0,
+            saturacaoOxigenio: 0,
+            frequenciaRespiratoria: 0,
+            count: 0
+          }
         }
       }
 
+      // Processar diferentes tipos de eventos
       switch (event.type) {
         case 'meal':
-          dailyStats[date].alimentosPercent += event.consumption_percentage || 0
-          dailyStats[date].alimentosCount += 1
-          dailyStats[date].totalAlimentos += 1
-          break
-        case 'med':
-          dailyStats[date].medicamentosCount += 1
-          dailyStats[date].totalMedicamentos += 1
-          break
-        case 'bathroom':
-          dailyStats[date].banheiroCount += 1
-          dailyStats[date].totalBanheiro += 1
-          if (event.bathroom_type === 'urina' && event.volume_ml) {
-            dailyStats[date].urinaML += event.volume_ml
-            dailyStats[date].totalUrina += event.volume_ml
+          dailyStats[date].alimentosCount++
+          if (event.volume_ml) {
+            dailyStats[date].alimentosPercent += event.volume_ml
           }
           break
         case 'drink':
-          dailyStats[date].liquidosML += event.volume_ml || 0
-          dailyStats[date].totalLiquidos += event.volume_ml || 0
-          break
-        case 'note':
-          if (event.notes?.includes('dreno')) {
-            dailyStats[date].drenosML += event.volume_ml || 0
-            dailyStats[date].totalDrenos += event.volume_ml || 0
+          dailyStats[date].totalLiquidos++
+          if (event.volume_ml) {
+            dailyStats[date].liquidosML += event.volume_ml
           }
+          break
+        case 'bathroom':
+          dailyStats[date].banheiroCount++
+          if (event.bathroom_type === 'urine' && event.volume_ml) {
+            dailyStats[date].urinaML += event.volume_ml
+          }
+          break
+        case 'medication':
+          dailyStats[date].medicamentosCount++
+          break
+        case 'drain':
+          if (event.left_amount) {
+            dailyStats[date].drenosML += event.left_amount
+          }
+          if (event.right_amount) {
+            dailyStats[date].drenosML += event.right_amount
+          }
+          break
+        case 'mood':
+          if (event.mood_scale) {
+            dailyStats[date].humorScore += event.mood_scale
+            dailyStats[date].humorCount++
+          }
+          break
+        case 'vital_signs':
+          const vitals = dailyStats[date].sinaisVitais
+          if (event.systolic_bp) vitals.pressaoSistolica += event.systolic_bp
+          if (event.diastolic_bp) vitals.pressaoDiastolica += event.diastolic_bp
+          if (event.heart_rate) vitals.frequenciaCardiaca += event.heart_rate
+          if (event.temperature) vitals.temperatura += event.temperature
+          if (event.oxygen_saturation) vitals.saturacaoOxigenio += event.oxygen_saturation
+          if (event.respiratory_rate) vitals.frequenciaRespiratoria += event.respiratory_rate
+          vitals.count++
           break
       }
     })
 
-    // Converter para array e calcular médias
-    const dataArray = Object.entries(dailyStats).map(([date, stats]) => ({
-      date,
-      ...stats,
-      alimentosPercent: stats.alimentosCount > 0 ? Math.round(stats.alimentosPercent / stats.alimentosCount) : 0
-    })).sort((a, b) => new Date(a.date.split('/').reverse().join('-')).getTime() - new Date(b.date.split('/').reverse().join('-')).getTime())
+    // Calcular médias
+    Object.keys(dailyStats).forEach(date => {
+      const stats = dailyStats[date]
+      if (stats.alimentosCount > 0) {
+        stats.alimentosPercent = Math.round(stats.alimentosPercent / stats.alimentosCount)
+      }
+      if (stats.humorCount > 0) {
+        stats.humorScore = Math.round(stats.humorScore / stats.humorCount)
+      }
+      if (stats.sinaisVitais.count > 0) {
+        const vitals = stats.sinaisVitais
+        vitals.pressaoSistolica = Math.round(vitals.pressaoSistolica / vitals.count)
+        vitals.pressaoDiastolica = Math.round(vitals.pressaoDiastolica / vitals.count)
+        vitals.frequenciaCardiaca = Math.round(vitals.frequenciaCardiaca / vitals.count)
+        vitals.temperatura = Math.round((vitals.temperatura / vitals.count) * 10) / 10
+        vitals.saturacaoOxigenio = Math.round(vitals.saturacaoOxigenio / vitals.count)
+        vitals.frequenciaRespiratoria = Math.round(vitals.frequenciaRespiratoria / vitals.count)
+      }
+    })
 
-    // Calcular médias para cada tipo de dado
-    const volumeData = dataArray.map(day => ({
-      date: day.date,
-      liquidos: day.liquidosML,
-      drenos: day.drenosML,
-      media: Math.round((dataArray.reduce((sum, d) => sum + d.liquidosML + d.drenosML, 0) / dataArray.length) || 0)
-    }))
-
-    const percentageData = dataArray.map(day => ({
-      date: day.date,
-      alimentos: day.alimentosPercent,
-      media: Math.round((dataArray.reduce((sum, d) => sum + d.alimentosPercent, 0) / dataArray.length) || 0)
-    }))
-
-    const dosageData = dataArray.map(day => ({
-      date: day.date,
-      medicamentos: day.medicamentosCount,
-      media: Math.round((dataArray.reduce((sum, d) => sum + d.medicamentosCount, 0) / dataArray.length) || 0)
-    }))
-
-    const countData = dataArray.map(day => ({
-      date: day.date,
-      banheiro: day.banheiroCount,
-      media: Math.round((dataArray.reduce((sum, d) => sum + d.banheiroCount, 0) / dataArray.length) || 0)
-    }))
-
-    const urinaData = dataArray.map(day => ({
-      date: day.date,
-      urina: day.urinaML,
-      media: Math.round((dataArray.reduce((sum, d) => sum + d.urinaML, 0) / dataArray.length) || 0)
-    }))
-
-    return { volumeData, percentageData, dosageData, countData, urinaData }
+    return Object.entries(dailyStats)
+      .map(([date, stats]) => ({
+        date,
+        ...stats
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }
 
-  const { volumeData, percentageData, dosageData, countData, urinaData } = getDailyData()
+  const dailyData = getDailyData()
 
-  // Configuração de cores para os gráficos
-  const chartConfig = {
-    liquidos: {
-      label: "Líquidos",
-      color: "#3b82f6"
-    },
-    drenos: {
-      label: "Drenos", 
-      color: "#ef4444"
-    },
-    alimentos: {
-      label: "Alimentos",
-      color: "#22c55e"
-    },
-    medicamentos: {
-      label: "Medicamentos",
-      color: "#a855f7"
-    },
-    banheiro: {
-      label: "Eliminações",
-      color: "#f59e0b"
-    },
-    urina: {
-      label: "Volume Urina",
-      color: "#06b6d4"
-    },
-    total: {
-      label: "Total",
-      color: "#6366f1"
-    },
-    media: {
-      label: "Média",
-      color: "#64748b"
-    }
-  }
+  // Dados para gráficos específicos
+  const alimentosData = dailyData.filter(day => day.alimentosCount > 0)
+  const liquidosData = dailyData.filter(day => day.liquidosML > 0)
+  const urinaData = dailyData.filter(day => day.urinaML > 0)
+  const humorData = dailyData.filter(day => day.humorScore > 0)
+  const sinaisVitaisData = dailyData.filter(day => day.sinaisVitais.count > 0)
 
-  // Função para exportar PDF
-  const handleExportPDF = async () => {
+  const exportToPDF = async () => {
     if (!selectedPatientId) {
       toast({
         title: "Erro",
-        description: "Selecione um paciente primeiro",
+        description: "Selecione um paciente para exportar o relatório",
         variant: "destructive"
       })
       return
@@ -181,18 +162,15 @@ const Reports = () => {
     setIsExporting(true)
     
     try {
-      const element = document.getElementById('reports-content')
-      if (!element) {
-        throw new Error('Elemento de relatórios não encontrado')
-      }
+      const element = document.getElementById('report-content')
+      if (!element) return
 
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true
       })
-
+      
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
       
@@ -200,27 +178,27 @@ const Reports = () => {
       const pageHeight = 295
       const imgHeight = (canvas.height * imgWidth) / canvas.width
       let heightLeft = imgHeight
-
+      
       let position = 0
-
+      
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
       heightLeft -= pageHeight
-
+      
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight
         pdf.addPage()
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
         heightLeft -= pageHeight
       }
-
+      
       const selectedPatient = patients.find(p => p.id === selectedPatientId)
-      const fileName = `relatorio-${selectedPatient?.full_name || 'paciente'}-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`
+      const fileName = `relatorio-${selectedPatient?.full_name || 'paciente'}-${new Date().toISOString().split('T')[0]}.pdf`
       
       pdf.save(fileName)
       
       toast({
         title: "Sucesso",
-        description: "Relatório exportado com sucesso!",
+        description: "Relatório exportado com sucesso!"
       })
     } catch (error) {
       console.error('Erro ao exportar PDF:', error)
@@ -234,503 +212,445 @@ const Reports = () => {
     }
   }
 
+  const selectedPatient = patients.find(p => p.id === selectedPatientId)
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-purple-50/30 space-y-6 p-6">
-      {/* Header com glassmorphism */}
-      <div className="flex items-center justify-between backdrop-blur-sm bg-white/70 rounded-2xl p-6 border border-white/20 shadow-lg">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Relatórios
-          </h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
           <p className="text-muted-foreground">
-            Visualize gráficos diários de cuidados por paciente
+            Visualize e exporte relatórios detalhados dos cuidados
           </p>
         </div>
-        <Button 
-          onClick={handleExportPDF} 
-          disabled={!selectedPatientId || isExporting}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-        >
-          {isExporting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="mr-2 h-4 w-4" />
-          )}
-          {isExporting ? 'Exportando...' : 'Exportar PDF'}
-        </Button>
-      </div>
-
-      {/* Seletor de Paciente */}
-      <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <User className="h-5 w-5 text-blue-600" />
-            Selecionar Paciente
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="flex items-center gap-4">
           <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-            <SelectTrigger className="w-full bg-white/50 border-white/30">
-              <SelectValue placeholder="Escolha um paciente para visualizar os relatórios" />
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Selecionar paciente" />
             </SelectTrigger>
             <SelectContent>
               {patients.map((patient) => (
                 <SelectItem key={patient.id} value={patient.id}>
-                  {patient.full_name} - Leito {patient.bed}
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {patient.name}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </CardContent>
-      </Card>
+          
+          <Button 
+            onClick={exportToPDF}
+            disabled={!selectedPatientId || isExporting}
+            className="flex items-center gap-2"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Exportar PDF
+          </Button>
+        </div>
+      </div>
 
-      {/* Conteúdo dos Relatórios */}
-      <div id="reports-content">
-        {selectedPatientId && patientEvents.length > 0 ? (
-          <div className="space-y-6">
-            {/* Estatísticas Resumidas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total de Eventos</p>
-                      <p className="text-2xl font-bold">{patientEvents.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <BarChart3 className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Dias com Registros</p>
-                      <p className="text-2xl font-bold">{volumeData.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Calendar className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Período</p>
-                      <p className="text-2xl font-bold">
-                        {volumeData.length > 0 ? `${volumeData.length}d` : '0d'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <FileText className="h-4 w-4 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Média Diária</p>
-                      <p className="text-2xl font-bold">
-                        {volumeData.length > 0 ? Math.round(patientEvents.length / volumeData.length) : 0}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+      {!selectedPatientId ? (
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Selecione um paciente</h3>
+              <p className="text-muted-foreground">
+                Escolha um paciente para visualizar seus relatórios
+              </p>
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div id="report-content" className="space-y-6">
+          {/* Header do Relatório */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Relatório de {selectedPatient?.full_name}
+              </CardTitle>
+              <CardDescription>
+                Período: {dailyData.length > 0 ? `${dailyData[0]?.date} até ${dailyData[dailyData.length - 1]?.date}` : 'Sem dados'}
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-            {/* Gráfico de Volume (ml) - Líquidos e Drenos */}
-            {volumeData.length > 0 && volumeData.some(day => day.liquidos > 0 || day.drenos > 0) && (
+          {/* Cards de Resumo */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Eventos</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{patientEvents.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  registros de cuidados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Dias com Registros</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dailyData.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  dias monitorados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Média Diária</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {dailyData.length > 0 ? Math.round(patientEvents.length / dailyData.length) : 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  eventos por dia
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Último Registro</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {patientEvents.length > 0 
+                    ? new Date(patientEvents[patientEvents.length - 1].occurred_at).toLocaleDateString('pt-BR')
+                    : 'N/A'
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  data do último cuidado
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gráficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de Alimentação */}
+            {alimentosData.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Volume em ML - Líquidos e Drenos
-                  </CardTitle>
-                  <CardDescription>
-                    Volume de líquidos ingeridos e drenos por dia
-                  </CardDescription>
+                  <CardTitle>Consumo de Alimentos (%)</CardTitle>
+                  <CardDescription>Percentual de consumo diário</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={volumeData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                       <XAxis 
-                         dataKey="date" 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                       />
-                       <YAxis 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                         label={{ value: 'Volume (ml)', angle: -90, position: 'insideLeft' }}
-                       />
-                       <Tooltip 
-                         contentStyle={{ 
-                           backgroundColor: '#fff', 
-                           border: '1px solid #e0e0e0',
-                           borderRadius: '8px',
-                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                         }}
-                         cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
-                         formatter={(value, name) => [`${value}ml`, name]}
-                       />
-                       <Legend 
-                         wrapperStyle={{ paddingTop: '20px' }}
-                         iconType="rect"
-                       />
-                       <Bar 
-                         dataKey="liquidos" 
-                         fill={chartConfig.liquidos.color} 
-                         name={chartConfig.liquidos.label} 
-                         radius={[2, 2, 0, 0]}
-                       >
-                         <LabelList 
-                           dataKey="liquidos" 
-                           position="top" 
-                           formatter={(value) => value > 0 ? `${value}ml` : ''}
-                           style={{ fontSize: '12px', fill: '#666' }}
-                         />
-                       </Bar>
-                       <Bar 
-                         dataKey="drenos" 
-                         fill={chartConfig.drenos.color} 
-                         name={chartConfig.drenos.label} 
-                         radius={[2, 2, 0, 0]}
-                       >
-                         <LabelList 
-                           dataKey="drenos" 
-                           position="top" 
-                           formatter={(value) => value > 0 ? `${value}ml` : ''}
-                           style={{ fontSize: '12px', fill: '#666' }}
-                         />
-                       </Bar>
-                       <Line 
-                         type="monotone" 
-                         dataKey="media" 
-                         stroke={chartConfig.media.color}
-                         strokeWidth={3}
-                         strokeDasharray="5 5"
-                         dot={false}
-                         name="Média ML"
-                       />
-                     </ComposedChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      alimentosPercent: {
+                        label: "Consumo (%)",
+                        color: "hsl(var(--chart-1))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={alimentosData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        />
+                        <YAxis domain={[0, 100]} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="alimentosPercent" 
+                          stroke="var(--color-alimentosPercent)" 
+                          strokeWidth={2}
+                          dot={{ fill: "var(--color-alimentosPercent)" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             )}
 
-            {/* Gráfico de Percentual - Alimentos */}
-            {percentageData.length > 0 && percentageData.some(day => day.alimentos > 0) && (
+            {/* Gráfico de Líquidos */}
+            {liquidosData.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Percentual de Consumo - Alimentos
-                  </CardTitle>
-                  <CardDescription>
-                    Percentual médio de alimentos consumidos por dia
-                  </CardDescription>
+                  <CardTitle>Ingestão de Líquidos (ml)</CardTitle>
+                  <CardDescription>Volume diário consumido</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={percentageData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                       <XAxis 
-                         dataKey="date" 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                       />
-                       <YAxis 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                         label={{ value: 'Percentual (%)', angle: -90, position: 'insideLeft' }}
-                         domain={[0, 100]}
-                       />
-                       <Tooltip 
-                         contentStyle={{ 
-                           backgroundColor: '#fff', 
-                           border: '1px solid #e0e0e0',
-                           borderRadius: '8px',
-                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                         }}
-                         cursor={{ fill: 'rgba(34, 197, 94, 0.1)' }}
-                         formatter={(value, name) => [`${value}%`, name]}
-                       />
-                       <Legend 
-                         wrapperStyle={{ paddingTop: '20px' }}
-                         iconType="rect"
-                       />
-                       <Bar 
-                         dataKey="alimentos" 
-                         fill={chartConfig.alimentos.color} 
-                         name={chartConfig.alimentos.label} 
-                         radius={[2, 2, 0, 0]}
-                       >
-                         <LabelList 
-                           dataKey="alimentos" 
-                           position="top" 
-                           formatter={(value) => value > 0 ? `${value}%` : ''}
-                           style={{ fontSize: '12px', fill: '#666' }}
-                         />
-                       </Bar>
-                       <Line 
-                         type="monotone" 
-                         dataKey="media" 
-                         stroke={chartConfig.media.color}
-                         strokeWidth={3}
-                         strokeDasharray="5 5"
-                         dot={false}
-                         name="Média %"
-                       />
-                     </ComposedChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      liquidosML: {
+                        label: "Líquidos (ml)",
+                        color: "hsl(var(--chart-2))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={liquidosData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar 
+                          dataKey="liquidosML" 
+                          fill="var(--color-liquidosML)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             )}
 
-            {/* Gráfico de Contagem - Medicamentos */}
-            {dosageData.length > 0 && dosageData.some(day => day.medicamentos > 0) && (
+            {/* Gráfico de Urina */}
+            {urinaData.length > 0 && urinaData.some((day: any) => day.urinaML > 0) && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Contagem - Medicamentos
-                  </CardTitle>
-                  <CardDescription>
-                    Número de medicamentos administrados por dia
-                  </CardDescription>
+                  <CardTitle>Volume de Urina (ml)</CardTitle>
+                  <CardDescription>Volume diário eliminado</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={dosageData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                       <XAxis 
-                         dataKey="date" 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                       />
-                       <YAxis 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                         label={{ value: 'Quantidade', angle: -90, position: 'insideLeft' }}
-                       />
-                       <Tooltip 
-                         contentStyle={{ 
-                           backgroundColor: '#fff', 
-                           border: '1px solid #e0e0e0',
-                           borderRadius: '8px',
-                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                         }}
-                         cursor={{ fill: 'rgba(168, 85, 247, 0.1)' }}
-                         formatter={(value, name) => [value, name]}
-                       />
-                       <Legend 
-                         wrapperStyle={{ paddingTop: '20px' }}
-                         iconType="rect"
-                       />
-                       <Bar 
-                         dataKey="medicamentos" 
-                         fill={chartConfig.medicamentos.color} 
-                         name={chartConfig.medicamentos.label} 
-                         radius={[2, 2, 0, 0]}
-                       >
-                         <LabelList 
-                           dataKey="medicamentos" 
-                           position="top" 
-                           formatter={(value) => value > 0 ? value : ''}
-                           style={{ fontSize: '12px', fill: '#666' }}
-                         />
-                       </Bar>
-                       <Line 
-                         type="monotone" 
-                         dataKey="media" 
-                         stroke={chartConfig.media.color}
-                         strokeWidth={3}
-                         strokeDasharray="5 5"
-                         dot={false}
-                         name="Média Medicamentos"
-                       />
-                     </ComposedChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      urinaML: {
+                        label: "Urina (ml)",
+                        color: "hsl(var(--chart-3))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={urinaData.filter((day: any) => day.urinaML > 0)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar 
+                          dataKey="urinaML" 
+                          fill="var(--color-urinaML)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             )}
 
-            {/* Gráfico de Contagem - Eliminações */}
-            {countData.length > 0 && countData.some(day => day.banheiro > 0) && (
+            {/* Gráfico de Humor */}
+            {humorData.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Contagem - Eliminações
-                  </CardTitle>
-                  <CardDescription>
-                    Número de eliminações registradas por dia
-                  </CardDescription>
+                  <CardTitle>Escala de Humor</CardTitle>
+                  <CardDescription>Avaliação diária do humor (1-10)</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={countData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                       <XAxis 
-                         dataKey="date" 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                       />
-                       <YAxis 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                         label={{ value: 'Quantidade', angle: -90, position: 'insideLeft' }}
-                       />
-                       <Tooltip 
-                         contentStyle={{ 
-                           backgroundColor: '#fff', 
-                           border: '1px solid #e0e0e0',
-                           borderRadius: '8px',
-                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                         }}
-                         cursor={{ fill: 'rgba(245, 158, 11, 0.1)' }}
-                         formatter={(value, name) => [value, name]}
-                       />
-                       <Legend 
-                         wrapperStyle={{ paddingTop: '20px' }}
-                         iconType="rect"
-                       />
-                       <Bar 
-                         dataKey="banheiro" 
-                         fill={chartConfig.banheiro.color} 
-                         name={chartConfig.banheiro.label} 
-                         radius={[2, 2, 0, 0]}
-                       >
-                         <LabelList 
-                           dataKey="banheiro" 
-                           position="top" 
-                           formatter={(value) => value > 0 ? value : ''}
-                           style={{ fontSize: '12px', fill: '#666' }}
-                         />
-                       </Bar>
-                       <Line 
-                         type="monotone" 
-                         dataKey="media" 
-                         stroke={chartConfig.media.color}
-                         strokeWidth={3}
-                         strokeDasharray="5 5"
-                         dot={false}
-                         name="Média Eliminações"
-                       />
-                     </ComposedChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      humorScore: {
+                        label: "Humor",
+                        color: "hsl(var(--chart-4))",
+                      },
+                    }}
+                    className="h-[300px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={humorData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        />
+                        <YAxis domain={[1, 10]} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="humorScore" 
+                          stroke="var(--color-humorScore)" 
+                          strokeWidth={2}
+                          dot={{ fill: "var(--color-humorScore)" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             )}
 
-            {/* Gráfico de Volume (ml) - Urina */}
-            {urinaData.length > 0 && urinaData.some(day => day.urina > 0) && (
-              <Card>
+            {/* Gráfico de Sinais Vitais */}
+            {sinaisVitaisData.length > 0 && (
+              <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Volume em ML - Urina
-                  </CardTitle>
-                  <CardDescription>
-                    Volume de urina registrado por dia (quando informado)
-                  </CardDescription>
+                  <CardTitle>Sinais Vitais</CardTitle>
+                  <CardDescription>Monitoramento dos sinais vitais ao longo do tempo</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={urinaData} margin={{ top: 40, right: 30, left: 20, bottom: 60 }}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                       <XAxis 
-                         dataKey="date" 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                       />
-                       <YAxis 
-                         tick={{ fontSize: 12 }}
-                         axisLine={{ stroke: '#e0e0e0' }}
-                         label={{ value: 'Volume (ml)', angle: -90, position: 'insideLeft' }}
-                       />
-                       <Tooltip 
-                         contentStyle={{ 
-                           backgroundColor: '#fff', 
-                           border: '1px solid #e0e0e0',
-                           borderRadius: '8px',
-                           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                         }}
-                         cursor={{ fill: 'rgba(99, 102, 241, 0.1)' }}
-                         formatter={(value, name) => [`${value}ml`, name]}
-                       />
-                       <Legend 
-                         wrapperStyle={{ paddingTop: '20px' }}
-                         iconType="rect"
-                       />
-                       <Bar 
-                         dataKey="urina" 
-                         fill={chartConfig.urina.color} 
-                         name={chartConfig.urina.label} 
-                         radius={[2, 2, 0, 0]}
-                       >
-                         <LabelList 
-                           dataKey="urina" 
-                           position="top" 
-                           formatter={(value) => value > 0 ? `${value}ml` : ''}
-                           style={{ fontSize: '12px', fill: '#666' }}
-                         />
-                       </Bar>
-                       <Line 
-                         type="monotone" 
-                         dataKey="media" 
-                         stroke={chartConfig.media.color}
-                         strokeWidth={3}
-                         strokeDasharray="5 5"
-                         dot={false}
-                         name="Média ML"
-                       />
-                     </ComposedChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      pressaoSistolica: {
+                        label: "Pressão Sistólica",
+                        color: "hsl(var(--chart-1))",
+                      },
+                      pressaoDiastolica: {
+                        label: "Pressão Diastólica",
+                        color: "hsl(var(--chart-2))",
+                      },
+                      frequenciaCardiaca: {
+                        label: "Frequência Cardíaca",
+                        color: "hsl(var(--chart-3))",
+                      },
+                      temperatura: {
+                        label: "Temperatura",
+                        color: "hsl(var(--chart-4))",
+                      },
+                    }}
+                    className="h-[400px]"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={sinaisVitaisData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        />
+                        <YAxis yAxisId="left" />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip />
+                        <Legend />
+                        <Line 
+                          yAxisId="left"
+                          type="monotone" 
+                          dataKey="sinaisVitais.pressaoSistolica" 
+                          stroke="var(--color-pressaoSistolica)" 
+                          name="Pressão Sistólica"
+                          strokeWidth={2}
+                        />
+                        <Line 
+                          yAxisId="left"
+                          type="monotone" 
+                          dataKey="sinaisVitais.pressaoDiastolica" 
+                          stroke="var(--color-pressaoDiastolica)" 
+                          name="Pressão Diastólica"
+                          strokeWidth={2}
+                        />
+                        <Line 
+                          yAxisId="left"
+                          type="monotone" 
+                          dataKey="sinaisVitais.frequenciaCardiaca" 
+                          stroke="var(--color-frequenciaCardiaca)" 
+                          name="Frequência Cardíaca"
+                          strokeWidth={2}
+                        />
+                        <Line 
+                          yAxisId="right"
+                          type="monotone" 
+                          dataKey="sinaisVitais.temperatura" 
+                          stroke="var(--color-temperatura)" 
+                          name="Temperatura (°C)"
+                          strokeWidth={2}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             )}
           </div>
-        ) : selectedPatientId ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum dado encontrado</h3>
-                <p className="text-muted-foreground">
-                  Este paciente ainda não possui registros de cuidados.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Selecione um Paciente</h3>
-                <p className="text-muted-foreground">
-                  Escolha um paciente acima para visualizar seus relatórios de cuidados.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+
+          {/* Tabela de Eventos Recentes */}
+          {patientEvents.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Eventos Recentes</CardTitle>
+                <CardDescription>Últimos 10 registros de cuidados</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Data/Hora</th>
+                        <th className="text-left p-2">Tipo</th>
+                        <th className="text-left p-2">Detalhes</th>
+                        <th className="text-left p-2">Observações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {patientEvents
+                        .slice(-10)
+                        .reverse()
+                        .map((event, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="p-2">
+                              {new Date(event.occurred_at).toLocaleString('pt-BR')}
+                            </td>
+                            <td className="p-2 capitalize">
+                              {event.type === 'meal' && 'Alimentação'}
+                              {event.type === 'drink' && 'Líquidos'}
+                              {event.type === 'bathroom' && 'Banheiro'}
+                              {event.type === 'mood' && 'Humor'}
+                              {event.type === 'medication' && 'Medicação'}
+                              {event.type === 'drain' && 'Dreno'}
+                              {event.type === 'vital_signs' && 'Sinais Vitais'}
+                            </td>
+                            <td className="p-2">
+                              {event.type === 'meal' && event.volume_ml && `${event.volume_ml}%`}
+                              {event.type === 'drink' && event.volume_ml && `${event.volume_ml}ml`}
+                              {event.type === 'bathroom' && event.volume_ml && `${event.volume_ml}ml`}
+                              {event.type === 'mood' && event.mood_scale && `Escala: ${event.mood_scale}`}
+                              {event.type === 'medication' && event.med_route && `Via: ${event.med_route}`}
+                              {event.type === 'drain' && (
+                                <>
+                                  {event.left_amount && `Esq: ${event.left_amount}ml`}
+                                  {event.right_amount && ` Dir: ${event.right_amount}ml`}
+                                </>
+                              )}
+                              {event.type === 'vital_signs' && (
+                                <>
+                                  {event.systolic_bp && event.diastolic_bp && `PA: ${event.systolic_bp}/${event.diastolic_bp}`}
+                                  {event.heart_rate && ` FC: ${event.heart_rate}`}
+                                  {event.temperature && ` T: ${event.temperature}°C`}
+                                </>
+                              )}
+                            </td>
+                            <td className="p-2 text-sm text-muted-foreground">
+                              {event.notes || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   )
 }

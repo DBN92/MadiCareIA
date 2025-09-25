@@ -159,8 +159,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             occurred_at: new Date(liquidForm.time).toISOString(),
             type: "drink",
             volume_ml: parseInt(liquidForm.amount),
-            liquid_type: liquidForm.type,
-            notes: liquidForm.notes
+            notes: `${liquidForm.type}${liquidForm.notes ? ' - ' + liquidForm.notes : ''}`
           }
           break
           
@@ -175,48 +174,9 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             ...data,
             occurred_at: new Date(foodForm.time).toISOString(),
             type: "meal",
-            meal_type: foodForm.type,
-            consumption_percentage: parseInt(foodForm.amount),
+            volume_ml: parseInt(foodForm.amount), // Usando volume_ml para porcentagem de consumo
             meal_desc: foodForm.description,
-            notes: foodForm.description
-          }
-          break
-          
-        case "medication":
-          if (!medicationForm.name) validationError = "Nome do medicamento é obrigatório"
-          else if (!medicationForm.dosage) validationError = "Dosagem é obrigatória"
-          else if (!medicationForm.route) validationError = "Via de administração é obrigatória"
-          
-          if (validationError) {
-            throw new Error(validationError)
-          }
-          data = {
-            ...data,
-            occurred_at: new Date(medicationForm.time).toISOString(),
-            type: "medication",
-            medication_name: medicationForm.name,
-            dosage: medicationForm.dosage,
-            route: medicationForm.route,
-            notes: medicationForm.notes
-          }
-          break
-          
-        case "drain":
-          if (!drainForm.type) validationError = "Tipo de dreno é obrigatório"
-          
-          if (validationError) {
-            throw new Error(validationError)
-          }
-          data = {
-            ...data,
-            occurred_at: new Date(drainForm.time).toISOString(),
-            type: "drain",
-            drain_type: drainForm.type,
-            left_amount: drainForm.leftAmount ? parseInt(drainForm.leftAmount) : null,
-            right_amount: drainForm.rightAmount ? parseInt(drainForm.rightAmount) : null,
-            left_aspect: drainForm.leftAspect,
-            right_aspect: drainForm.rightAspect,
-            notes: drainForm.notes
+            notes: `${foodForm.type}${foodForm.description ? ' - ' + foodForm.description : ''}`
           }
           break
           
@@ -235,7 +195,63 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             notes: bathroomForm.notes
           }
           break
+
+        case "humor":
+          if (!humorForm.moodScale) validationError = "Escala de humor é obrigatória"
+          else if (!humorForm.happinessScale) validationError = "Escala de felicidade é obrigatória"
           
+          if (validationError) {
+            throw new Error(validationError)
+          }
+          data = {
+            ...data,
+            occurred_at: new Date(humorForm.time).toISOString(),
+            type: "mood",
+            mood_scale: parseInt(humorForm.moodScale),
+            happiness_scale: parseInt(humorForm.happinessScale),
+            mood_notes: humorForm.notes,
+            notes: humorForm.notes
+          }
+          break
+
+        case "medication":
+          if (!medicationForm.name) validationError = "Nome da medicação é obrigatório"
+          else if (!medicationForm.dosage) validationError = "Dosagem é obrigatória"
+          else if (!medicationForm.route) validationError = "Via de administração é obrigatória"
+          
+          if (validationError) {
+            throw new Error(validationError)
+          }
+          data = {
+            ...data,
+            occurred_at: new Date(medicationForm.time).toISOString(),
+            type: "medication",
+            med_name: medicationForm.name,
+            med_dose: medicationForm.dosage,
+            med_route: medicationForm.route,
+            notes: medicationForm.notes
+          }
+          break
+
+        case "drain":
+          if (!drainForm.type) validationError = "Tipo de dreno é obrigatório"
+          
+          if (validationError) {
+            throw new Error(validationError)
+          }
+          data = {
+            ...data,
+            occurred_at: new Date(drainForm.time).toISOString(),
+            type: "drain",
+            drain_type: drainForm.type,
+            left_amount: drainForm.leftAmount ? parseInt(drainForm.leftAmount) : null,
+            right_amount: drainForm.rightAmount ? parseInt(drainForm.rightAmount) : null,
+            left_aspect: drainForm.leftAspect || null,
+            right_aspect: drainForm.rightAspect || null,
+            notes: drainForm.notes
+          }
+          break
+
         case "vitals":
           if (!vitalSignsForm.systolicBP && !vitalSignsForm.diastolicBP && !vitalSignsForm.heartRate && 
               !vitalSignsForm.temperature && !vitalSignsForm.oxygenSaturation && !vitalSignsForm.respiratoryRate) {
@@ -258,24 +274,6 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             notes: vitalSignsForm.notes
           }
           break
-
-        case "humor":
-          if (!humorForm.moodScale) validationError = "Escala de humor é obrigatória"
-          else if (!humorForm.happinessScale) validationError = "Escala de felicidade é obrigatória"
-          
-          if (validationError) {
-            throw new Error(validationError)
-          }
-          data = {
-            ...data,
-            occurred_at: new Date(humorForm.time).toISOString(),
-            type: "humor",
-            mood_scale: parseInt(humorForm.moodScale),
-            happiness_scale: parseInt(humorForm.happinessScale),
-            mood_notes: humorForm.notes,
-            notes: humorForm.notes
-          }
-          break
       }
       
       await addEvent(data)
@@ -288,20 +286,20 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
         case "food":
           setFoodForm({ type: "", amount: "", time: getCurrentDateTime(), description: "" })
           break
+        case "bathroom":
+          setBathroomForm({ type: "", volume: "", time: getCurrentDateTime(), notes: "" })
+          break
+        case "humor":
+          setHumorForm({ moodScale: "", happinessScale: "", time: getCurrentDateTime(), notes: "" })
+          break
         case "medication":
           setMedicationForm({ name: "", dosage: "", route: "", time: getCurrentDateTime(), notes: "" })
           break
         case "drain":
           setDrainForm({ type: "", leftAmount: "", rightAmount: "", leftAspect: "", rightAspect: "", time: getCurrentDateTime(), notes: "" })
           break
-        case "bathroom":
-          setBathroomForm({ type: "", volume: "", time: getCurrentDateTime(), notes: "" })
-          break
         case "vitals":
           setVitalSignsForm({ systolicBP: "", diastolicBP: "", heartRate: "", temperature: "", oxygenSaturation: "", respiratoryRate: "", time: getCurrentDateTime(), notes: "" })
-          break
-        case "humor":
-          setHumorForm({ moodScale: "", happinessScale: "", time: getCurrentDateTime(), notes: "" })
           break
       }
       
@@ -351,30 +349,30 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
               <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Alimentos</span>
               <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Alim.</span>
             </TabsTrigger>
-            <TabsTrigger value="medication" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
-              <Pill className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
-              <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Medicamentos</span>
-              <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Med.</span>
-            </TabsTrigger>
-            <TabsTrigger value="drain" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
-              <WashingMachine className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
-              <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Drenos</span>
-              <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Dren.</span>
-            </TabsTrigger>
             <TabsTrigger value="bathroom" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
               <Activity className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
               <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Banheiro</span>
               <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Banh.</span>
             </TabsTrigger>
-            <TabsTrigger value="vitals" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
-              <Heart className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
-              <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Sinais Vitais</span>
-              <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Vitais</span>
-            </TabsTrigger>
             <TabsTrigger value="humor" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
               <Smile className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
               <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Humor</span>
               <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Humor</span>
+            </TabsTrigger>
+            <TabsTrigger value="medication" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
+              <Pill className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
+              <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Medicação</span>
+              <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Med.</span>
+            </TabsTrigger>
+            <TabsTrigger value="drain" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
+              <WashingMachine className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
+              <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Dreno</span>
+              <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Dreno</span>
+            </TabsTrigger>
+            <TabsTrigger value="vitals" className={`flex flex-col items-center gap-1 text-xs ${isMobile ? 'py-2 px-2 min-h-[60px]' : 'py-2 px-1 sm:px-2 sm:text-sm'}`}>
+              <Heart className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
+              <span className={`${isMobile ? 'text-xs' : 'hidden sm:inline'}`}>Sinais Vitais</span>
+              <span className={`${isMobile ? 'hidden' : 'sm:hidden'}`}>Vitais</span>
             </TabsTrigger>
           </TabsList>
 
@@ -715,15 +713,15 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="urina">Urina</SelectItem>
-                      <SelectItem value="fezes">Fezes</SelectItem>
-                      <SelectItem value="ambos">Ambos</SelectItem>
+                      <SelectItem value="urine">Urina</SelectItem>
+                      <SelectItem value="stool">Fezes</SelectItem>
+                      <SelectItem value="mixed">Ambos</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 {/* Campo de volume opcional para urina */}
-                {(bathroomForm.type === "urina" || bathroomForm.type === "ambos") && (
+                {(bathroomForm.type === "urine" || bathroomForm.type === "mixed") && (
                   <div>
                     <Label htmlFor="bathroom-volume" className="text-sm font-medium">Volume (ml) - Opcional</Label>
                     <Input 

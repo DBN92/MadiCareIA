@@ -191,9 +191,9 @@ const FamilyCareForm = ({ patient, permissions, onClose, onSave }: FamilyCareFor
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="urina">Urina</SelectItem>
-                  <SelectItem value="fezes">Fezes</SelectItem>
-                  <SelectItem value="ambos">Ambos</SelectItem>
+                  <SelectItem value="urine">Urina</SelectItem>
+                  <SelectItem value="stool">Fezes</SelectItem>
+                  <SelectItem value="mixed">Ambos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
