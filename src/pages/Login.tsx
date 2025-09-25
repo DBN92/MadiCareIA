@@ -73,7 +73,6 @@ export default function Login() {
         hospital: user.hospital,
         isAuthenticated: true
       }
-      
       login(userData)
 
       toast({

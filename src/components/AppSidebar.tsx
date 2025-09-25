@@ -30,6 +30,7 @@ import {
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: BarChart3, description: "Visão geral do sistema" },
   { title: "Pacientes", url: "/patients", icon: Users, description: "Gerenciar pacientes" },
+  { title: "Prontuários", url: "/medical-records", icon: Stethoscope, description: "Prontuários médicos" },
   { title: "Cuidados", url: "/care", icon: Heart, description: "Registros de cuidados" },
   { title: "Relatórios", url: "/reports", icon: FileText, description: "Relatórios e análises" },
   { title: "Configurações", url: "/settings", icon: Settings, description: "Configurações do sistema" },

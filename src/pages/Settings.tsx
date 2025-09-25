@@ -174,6 +174,8 @@ export default function Settings() {
   const [isHospitalDialogOpen, setIsHospitalDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [editingHospital, setEditingHospital] = useState<Hospital | null>(null)
+  const [isCreatingUser, setIsCreatingUser] = useState(false)
+  const [rateLimitCooldown, setRateLimitCooldown] = useState<number | null>(null)
 
   const [userForm, setUserForm] = useState({
     name: '',
@@ -213,36 +215,100 @@ export default function Settings() {
 
   const handleAddUser = async () => {
     try {
-      // Criar usuário na tabela profiles
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .insert({
-          id: crypto.randomUUID(),
-          full_name: userForm.name,
-          role: userForm.role
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Erro ao criar usuário:', error)
+      setIsCreatingUser(true)
+      
+      // Validar campos obrigatórios
+      if (!userForm.name || !userForm.email || !userForm.password) {
         toast({
           title: "Erro",
-          description: "Não foi possível criar o usuário. Tente novamente.",
+          description: "Por favor, preencha todos os campos obrigatórios.",
           variant: "destructive",
         })
         return
       }
 
+      // Criar usuário usando auth.signUp (método correto)
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userForm.email,
+        password: userForm.password,
+        options: {
+          data: {
+            full_name: userForm.name,
+            role: userForm.role
+          }
+        }
+      })
+
+      if (authError) {
+        console.error('Erro ao criar usuário:', authError)
+        
+        // Tratamento específico para rate limiting
+        if (authError.message.includes('For security purposes, you can only request this after')) {
+          const match = authError.message.match(/after (\d+) seconds/)
+          const seconds = match ? parseInt(match[1]) : 60
+          
+          setRateLimitCooldown(seconds)
+          
+          // Iniciar countdown
+          const countdown = setInterval(() => {
+            setRateLimitCooldown(prev => {
+              if (prev && prev > 1) {
+                return prev - 1
+              } else {
+                clearInterval(countdown)
+                return null
+              }
+            })
+          }, 1000)
+          
+          toast({
+            title: "Limite de tentativas atingido",
+            description: `Por segurança, aguarde ${seconds} segundos antes de tentar criar outro usuário.`,
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "Erro",
+            description: authError.message || "Não foi possível criar o usuário. Tente novamente.",
+            variant: "destructive",
+          })
+        }
+        return
+      }
+
+      if (!authData.user) {
+        toast({
+          title: "Erro",
+          description: "Erro ao criar usuário. Tente novamente.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Aguardar um pouco para o trigger criar o profile
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Verificar se o profile foi criado
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Erro ao verificar profile:', profileError)
+        // Mesmo com erro no profile, o usuário foi criado
+      }
+
       // Atualizar lista local
       const newUser: User = {
-        id: profile.id,
-        name: profile.full_name || userForm.name,
-        email: userForm.email,
-        role: userForm.role,
+        id: authData.user.id,
+        name: profile?.full_name || userForm.name,
+        email: authData.user.email || userForm.email,
+        role: (profile?.role as 'admin' | 'nurse' | 'doctor') || userForm.role,
         hospital: userForm.hospital,
         status: userForm.status,
-        createdAt: new Date(profile.created_at).toISOString().split('T')[0]
+        createdAt: new Date(authData.user.created_at).toISOString().split('T')[0]
       }
       
       setUsers([...users, newUser])
@@ -260,6 +326,8 @@ export default function Settings() {
         description: "Erro interno. Tente novamente.",
         variant: "destructive",
       })
+    } finally {
+      setIsCreatingUser(false)
     }
   }
 
@@ -496,7 +564,6 @@ export default function Settings() {
         toast({
           title: "Configurações atualizadas",
           description: "As configurações do chat foram salvas com sucesso.",
-          variant: "success"
         })
       } else {
         addLog('error', 'Erro ao salvar configurações do chat', user?.name || 'Sistema')
@@ -511,7 +578,7 @@ export default function Settings() {
       toast({
         title: "Validação falhou",
         description: "Verifique os campos destacados e tente novamente.",
-        variant: "warning"
+        variant: "destructive"
       })
     }
   }
@@ -790,8 +857,21 @@ export default function Settings() {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button type="submit" onClick={editingUser ? handleUpdateUser : handleAddUser}>
-                        {editingUser ? 'Atualizar' : 'Criar'} Usuário
+                      <Button 
+                        type="submit" 
+                        onClick={editingUser ? handleUpdateUser : handleAddUser}
+                        disabled={isCreatingUser || (rateLimitCooldown !== null && !editingUser)}
+                      >
+                        {isCreatingUser ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Criando...
+                          </>
+                        ) : rateLimitCooldown !== null && !editingUser ? (
+                          `Aguarde ${rateLimitCooldown}s`
+                        ) : (
+                          `${editingUser ? 'Atualizar' : 'Criar'} Usuário`
+                        )}
                       </Button>
                     </DialogFooter>
                   </DialogContent>

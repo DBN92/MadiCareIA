@@ -9,6 +9,7 @@ import { useCareEvents } from '@/hooks/useCareEvents';
 import { Patient } from '@/hooks/usePatients';
 import { FamilyLayout } from '@/components/FamilyLayout';
 import FamilyCare from '@/components/FamilyCare';
+import { MedicalTimeline } from '@/components/MedicalTimeline';
 import { 
   Heart, 
   Droplets, 
@@ -50,7 +51,9 @@ const FamilyDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const view = new URLSearchParams(location.search).get('view') || 'dashboard';
+  // Determine view from URL path instead of query parameter
+  const view = location.pathname.includes('/medical') ? 'medical' : 
+               location.pathname.includes('/care') ? 'care' : 'dashboard';
 
   useEffect(() => {
     const validateAccess = async () => {
@@ -387,10 +390,23 @@ const FamilyDashboard: React.FC = () => {
     </div>
   );
 
+  const renderMedical = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Prontuário Médico</h2>
+        <p className="text-gray-600">
+          Histórico médico completo de {patient?.full_name}
+        </p>
+      </div>
+
+      <MedicalTimeline patientId={patient?.id || ''} />
+    </div>
+  );
+
   return (
-    <FamilyLayout patient={patient} permissions={permissions} currentPage={view === 'care' ? 'care' : 'dashboard'}>
+    <FamilyLayout patient={patient} permissions={permissions} currentPage={view === 'medical' ? 'medical' : view === 'care' ? 'care' : 'dashboard'}>
       <div className="p-4 max-w-4xl mx-auto">
-        {view === 'care' ? renderCare() : renderDashboard()}
+        {view === 'medical' ? renderMedical() : view === 'care' ? renderCare() : renderDashboard()}
       </div>
     </FamilyLayout>
   );

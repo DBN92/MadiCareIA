@@ -98,6 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const currentUser = user
     setUser(null)
     localStorage.removeItem('user')
+    
     if (currentUser) {
       addAuthLog('info', 'Logout Realizado', `Usuário ${currentUser.name} (${currentUser.email}) fez logout do sistema`)
     }

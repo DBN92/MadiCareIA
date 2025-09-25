@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Dados de Prontuário Médico</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 25px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        .button.secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        .button.danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .status.success {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        .status.info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #1565c0;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        .data-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Teste de Dados de Prontuário Médico</h1>
+            <p>Verificação e criação de dados de teste para prontuários médicos</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h3>📋 1. Verificar Dados Existentes</h3>
+                <p>Verificar se existem prontuários médicos no banco de dados:</p>
+                <button class="button" onclick="checkExistingRecords()">Verificar Prontuários</button>
+                <div id="existing-records-result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>👤 2. Verificar Pacientes</h3>
+                <p>Verificar se existem pacientes para associar aos prontuários:</p>
+                <button class="button secondary" onclick="checkPatients()">Verificar Pacientes</button>
+                <div id="patients-result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>👨‍⚕️ 3. Verificar Médicos</h3>
+                <p>Verificar se existem perfis de médicos no sistema:</p>
+                <button class="button secondary" onclick="checkDoctors()">Verificar Médicos</button>
+                <div id="doctors-result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>➕ 4. Criar Dados de Teste</h3>
+                <p>Criar prontuários médicos de teste para demonstração:</p>
+                <button class="button" onclick="createTestRecords()" id="create-btn">Criar Prontuários de Teste</button>
+                <div id="create-result"></div>
+            </div>
+
+            <div class="test-section">
+                <h3>🔗 5. Testar Acesso Familiar</h3>
+                <p>Testar o acesso aos prontuários através do modo familiar:</p>
+                <button class="button secondary" onclick="testFamilyAccess()" id="test-family-btn" disabled>Testar Acesso Familiar</button>
+                <div id="family-access-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+        
+        // Configuração do Supabase (substitua pelas suas credenciais)
+        const supabaseUrl = 'https://your-project.supabase.co'
+        const supabaseKey = 'your-anon-key'
+        
+        // Para teste local, vamos simular os dados
+        let testPatientId = null;
+        let testDoctorId = null;
+        let testRecords = [];
+
+        window.checkExistingRecords = async function() {
+            const resultDiv = document.getElementById('existing-records-result');
+            
+            try {
+                // Simular verificação de prontuários existentes
+                const mockRecords = JSON.parse(localStorage.getItem('test_medical_records') || '[]');
+                
+                if (mockRecords.length > 0) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">✅ Encontrados ${mockRecords.length} prontuários médicos</div>
+                        <div class="data-display">
+                            <h4>Prontuários encontrados:</h4>
+                            <pre>${JSON.stringify(mockRecords, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status info">ℹ️ Nenhum prontuário médico encontrado</div>
+                        <p>Será necessário criar dados de teste.</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao verificar prontuários: ${error.message}</div>
+                `;
+            }
+        }
+
+        window.checkPatients = async function() {
+            const resultDiv = document.getElementById('patients-result');
+            
+            try {
+                // Verificar pacientes existentes no localStorage
+                const patients = JSON.parse(localStorage.getItem('test_patients') || '[]');
+                const familyTokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+                
+                if (patients.length > 0 || familyTokens.length > 0) {
+                    testPatientId = patients[0]?.id || familyTokens[0]?.patient_id;
+                    
+                    resultDiv.innerHTML = `
+                        <div class="status success">✅ Encontrados ${patients.length} pacientes e ${familyTokens.length} tokens familiares</div>
+                        <div class="data-display">
+                            <h4>Pacientes:</h4>
+                            <pre>${JSON.stringify(patients.slice(0, 2), null, 2)}</pre>
+                            <h4>Tokens familiares:</h4>
+                            <pre>${JSON.stringify(familyTokens.slice(0, 2), null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status info">ℹ️ Nenhum paciente encontrado</div>
+                        <p>Será necessário criar um paciente de teste primeiro.</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao verificar pacientes: ${error.message}</div>
+                `;
+            }
+        }
+
+        window.checkDoctors = async function() {
+            const resultDiv = document.getElementById('doctors-result');
+            
+            try {
+                // Simular verificação de médicos
+                const mockDoctors = [
+                    {
+                        id: 'doctor-1',
+                        full_name: 'Dr. João Silva',
+                        specialty: 'Cardiologia'
+                    },
+                    {
+                        id: 'doctor-2', 
+                        full_name: 'Dra. Maria Santos',
+                        specialty: 'Clínica Geral'
+                    }
+                ];
+                
+                testDoctorId = mockDoctors[0].id;
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✅ Médicos disponíveis para teste</div>
+                    <div class="data-display">
+                        <h4>Médicos de teste:</h4>
+                        <pre>${JSON.stringify(mockDoctors, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao verificar médicos: ${error.message}</div>
+                `;
+            }
+        }
+
+        window.createTestRecords = async function() {
+            const resultDiv = document.getElementById('create-result');
+            
+            if (!testPatientId) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Primeiro verifique se existem pacientes</div>
+                `;
+                return;
+            }
+            
+            try {
+                // Criar prontuários médicos de teste
+                const testRecords = [
+                    {
+                        id: 'record-1',
+                        patient_id: testPatientId,
+                        doctor_id: 'doctor-1',
+                        record_date: new Date().toISOString(),
+                        chief_complaint: 'Dor no peito e falta de ar',
+                        assessment_plan: 'Suspeita de angina. Solicitar ECG e enzimas cardíacas.',
+                        medications: 'AAS 100mg 1x/dia, Atenolol 50mg 1x/dia',
+                        allergies: 'Penicilina',
+                        physical_examination: 'PA: 140/90 mmHg, FC: 85 bpm, ausculta cardíaca normal',
+                        history_present_illness: 'Paciente refere dor precordial há 2 dias',
+                        past_medical_history: 'Hipertensão arterial há 5 anos',
+                        family_history: 'Pai com IAM aos 60 anos',
+                        social_history: 'Ex-tabagista, sedentário',
+                        review_systems: 'Nega febre, náuseas ou vômitos',
+                        notes: 'Paciente orientado sobre mudanças no estilo de vida',
+                        status: 'completed',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        doctor: {
+                            full_name: 'Dr. João Silva',
+                            specialty: 'Cardiologia'
+                        }
+                    },
+                    {
+                        id: 'record-2',
+                        patient_id: testPatientId,
+                        doctor_id: 'doctor-2',
+                        record_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        chief_complaint: 'Consulta de rotina',
+                        assessment_plan: 'Paciente estável. Manter medicações atuais.',
+                        medications: 'Losartana 50mg 1x/dia, Sinvastatina 20mg à noite',
+                        allergies: 'Nenhuma alergia conhecida',
+                        physical_examination: 'Exame físico normal',
+                        history_present_illness: 'Consulta de acompanhamento',
+                        past_medical_history: 'Hipertensão e dislipidemia',
+                        family_history: 'Mãe diabética',
+                        social_history: 'Não fuma, bebe socialmente',
+                        review_systems: 'Sem queixas',
+                        notes: 'Retorno em 3 meses',
+                        status: 'completed',
+                        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        updated_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        doctor: {
+                            full_name: 'Dra. Maria Santos',
+                            specialty: 'Clínica Geral'
+                        }
+                    }
+                ];
+                
+                // Salvar no localStorage para teste
+                localStorage.setItem('test_medical_records', JSON.stringify(testRecords));
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✅ Prontuários médicos de teste criados com sucesso!</div>
+                    <div class="data-display">
+                        <h4>Prontuários criados:</h4>
+                        <pre>${JSON.stringify(testRecords, null, 2)}</pre>
+                    </div>
+                `;
+                
+                // Habilitar teste de acesso familiar
+                document.getElementById('test-family-btn').disabled = false;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao criar prontuários: ${error.message}</div>
+                `;
+            }
+        }
+
+        window.testFamilyAccess = async function() {
+            const resultDiv = document.getElementById('family-access-result');
+            
+            try {
+                // Verificar tokens familiares
+                const familyTokens = JSON.parse(localStorage.getItem('bedside_family_tokens') || '[]');
+                
+                if (familyTokens.length === 0) {
+                    resultDiv.innerHTML = `
+                        <div class="status error">❌ Nenhum token familiar encontrado</div>
+                        <p>Execute primeiro o teste de acesso familiar em: <a href="test-direct-access.html" target="_blank">test-direct-access.html</a></p>
+                    `;
+                    return;
+                }
+                
+                const activeToken = familyTokens.find(t => t.is_active);
+                if (!activeToken) {
+                    resultDiv.innerHTML = `
+                        <div class="status error">❌ Nenhum token familiar ativo encontrado</div>
+                    `;
+                    return;
+                }
+                
+                // Gerar URLs de teste
+                const medicalUrl = `http://localhost:8080/family/${activeToken.patient_id}/${activeToken.token}/medical`;
+                const dashboardUrl = `http://localhost:8080/family/${activeToken.patient_id}/${activeToken.token}`;
+                
+                resultDiv.innerHTML = `
+                    <div class="status success">✅ URLs de teste geradas!</div>
+                    <div class="data-display">
+                        <h4>🏥 Acesso ao Prontuário Médico:</h4>
+                        <p><a href="${medicalUrl}" target="_blank" class="button">${medicalUrl}</a></p>
+                        
+                        <h4>📊 Dashboard Familiar:</h4>
+                        <p><a href="${dashboardUrl}" target="_blank" class="button secondary">${dashboardUrl}</a></p>
+                        
+                        <h4>Credenciais de Teste:</h4>
+                        <p><strong>Usuário:</strong> ${activeToken.username}</p>
+                        <p><strong>Senha:</strong> ${activeToken.password}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Erro ao testar acesso familiar: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Executar verificações iniciais
+        window.addEventListener('load', function() {
+            checkExistingRecords();
+            checkPatients();
+            checkDoctors();
+        });
+    </script>
+</body>
+</html>

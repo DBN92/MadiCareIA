@@ -13,14 +13,15 @@ import {
   Calendar,
   LogOut,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react'
 
 interface FamilyLayoutProps {
   children: ReactNode
   patient: Patient
   permissions: FamilyPermissions | null
-  currentPage: 'dashboard' | 'care' | 'reports'
+  currentPage: 'dashboard' | 'care' | 'reports' | 'medical'
 }
 
 export const FamilyLayout = ({ children, patient, permissions, currentPage }: FamilyLayoutProps) => {
@@ -41,7 +42,13 @@ export const FamilyLayout = ({ children, patient, permissions, currentPage }: Fa
       icon: Activity,
       path: `/family/${patientId}/${token}/care`,
       disabled: !permissions?.canEdit
-    }
+    },
+    {
+       id: 'medical',
+       label: 'Prontuário',
+       icon: FileText,
+       path: `/family/${patientId}/${token}/medical`
+     }
   ]
 
   const handleLogout = () => {

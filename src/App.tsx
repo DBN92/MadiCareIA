@@ -17,6 +17,7 @@ import Patients from "./pages/Patients";
 import Care from "./pages/Care";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import MedicalRecords from "./pages/MedicalRecords";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import FamilyDashboard from "./pages/FamilyDashboard";
@@ -60,6 +61,7 @@ const AppContent = () => {
           <Route path="/family/:patientId/:token" element={<FamilyDashboard />} />
           <Route path="/family/:patientId/:token/dashboard" element={<FamilyDashboard />} />
           <Route path="/family/:patientId/:token/care" element={<FamilyCareScreen />} />
+          <Route path="/family/:patientId/:token/medical" element={<FamilyDashboard />} />
           
           {/* Rotas públicas do demo */}
           <Route path="/demo" element={<DemoLanding />} />
@@ -112,6 +114,7 @@ const AppContent = () => {
             <Route path="patients" element={<Patients />} />
             <Route path="care" element={<Care />} />
             <Route path="care/:patientId" element={<Care />} />
+            <Route path="medical-records" element={<MedicalRecords />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={
               <ProtectedRoute requiredRole="admin">

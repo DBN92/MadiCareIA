@@ -7,118 +7,46 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   public: {
     Tables: {
       events: {
         Row: {
           bathroom_type: string | null
-          consumption_percentage: number | null
           created_at: string
-          created_by: string | null
-          diastolic_bp: number | null
-          dosage: string | null
-          drain_type: string | null
-          heart_rate: number | null
+          date: string
           id: string
-          left_amount: number | null
-          left_aspect: string | null
-          liquid_type: string | null
-          meal_desc: string | null
-          meal_type: string | null
-          med_dose: string | null
-          med_name: string | null
-          medication_name: string | null
+          mood_scale: number | null
           notes: string | null
-          occurred_at: string
-          oxygen_saturation: number | null
           patient_id: string
-          respiratory_rate: number | null
-          right_amount: number | null
-          right_aspect: string | null
-          route: string | null
-          scheduled_at: string | null
-          systolic_bp: number | null
-          temperature: number | null
           type: Database["public"]["Enums"]["event_type"]
+          updated_at: string
           volume_ml: number | null
         }
         Insert: {
           bathroom_type?: string | null
-          consumption_percentage?: number | null
           created_at?: string
-          created_by?: string | null
-          diastolic_bp?: number | null
-          dosage?: string | null
-          drain_type?: string | null
-          heart_rate?: number | null
+          date: string
           id?: string
-          left_amount?: number | null
-          left_aspect?: string | null
-          liquid_type?: string | null
-          meal_desc?: string | null
-          meal_type?: string | null
-          med_dose?: string | null
-          med_name?: string | null
-          medication_name?: string | null
+          mood_scale?: number | null
           notes?: string | null
-          occurred_at?: string
-          oxygen_saturation?: number | null
           patient_id: string
-          respiratory_rate?: number | null
-          right_amount?: number | null
-          right_aspect?: string | null
-          route?: string | null
-          scheduled_at?: string | null
-          systolic_bp?: number | null
-          temperature?: number | null
           type: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
           volume_ml?: number | null
         }
         Update: {
           bathroom_type?: string | null
-          consumption_percentage?: number | null
           created_at?: string
-          created_by?: string | null
-          diastolic_bp?: number | null
-          dosage?: string | null
-          drain_type?: string | null
-          heart_rate?: number | null
+          date?: string
           id?: string
-          left_amount?: number | null
-          left_aspect?: string | null
-          liquid_type?: string | null
-          meal_desc?: string | null
-          meal_type?: string | null
-          med_dose?: string | null
-          med_name?: string | null
-          medication_name?: string | null
+          mood_scale?: number | null
           notes?: string | null
-          occurred_at?: string
-          oxygen_saturation?: number | null
           patient_id?: string
-          respiratory_rate?: number | null
-          right_amount?: number | null
-          right_aspect?: string | null
-          route?: string | null
-          scheduled_at?: string | null
-          systolic_bp?: number | null
-          temperature?: number | null
           type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string
           volume_ml?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "events_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "events_patient_id_fkey"
             columns: ["patient_id"]
@@ -128,43 +56,218 @@ export type Database = {
           },
         ]
       }
-      patients: {
+      medical_diagnoses: {
         Row: {
-          bed: string | null
-          birth_date: string | null
           created_at: string
-          created_by: string | null
-          full_name: string
+          diagnosis_code: string | null
+          diagnosis_text: string
           id: string
-          is_active: boolean
-          notes: string | null
-          org_id: string | null
+          medical_record_id: string
+          primary_diagnosis: boolean
+          updated_at: string
         }
         Insert: {
-          bed?: string | null
-          birth_date?: string | null
           created_at?: string
-          created_by?: string | null
-          full_name: string
+          diagnosis_code?: string | null
+          diagnosis_text: string
           id?: string
-          is_active?: boolean
-          notes?: string | null
-          org_id?: string | null
+          medical_record_id: string
+          primary_diagnosis?: boolean
+          updated_at?: string
         }
         Update: {
-          bed?: string | null
-          birth_date?: string | null
           created_at?: string
-          created_by?: string | null
-          full_name?: string
+          diagnosis_code?: string | null
+          diagnosis_text?: string
           id?: string
-          is_active?: boolean
-          notes?: string | null
-          org_id?: string | null
+          medical_record_id?: string
+          primary_diagnosis?: boolean
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "patients_created_by_fkey"
+            foreignKeyName: "medical_diagnoses_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_exams: {
+        Row: {
+          created_at: string
+          exam_date: string | null
+          exam_type: string
+          id: string
+          medical_record_id: string
+          notes: string | null
+          result: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exam_date?: string | null
+          exam_type: string
+          id?: string
+          medical_record_id: string
+          notes?: string | null
+          result?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exam_date?: string | null
+          exam_type?: string
+          id?: string
+          medical_record_id?: string
+          notes?: string | null
+          result?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_exams_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_record_attachments: {
+        Row: {
+          attachment_type: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          medical_record_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_type: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          medical_record_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_type?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          medical_record_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_record_attachments_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_record_shares: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          medical_record_id: string
+          permissions: string
+          shared_by: string
+          shared_with: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          medical_record_id: string
+          permissions?: string
+          shared_by: string
+          shared_with: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          medical_record_id?: string
+          permissions?: string
+          shared_by?: string
+          shared_with?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_record_shares_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_record_shares_shared_by_fkey"
+            columns: ["shared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_record_shares_shared_with_fkey"
+            columns: ["shared_with"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_record_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          template_data: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          template_data: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          template_data?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_record_templates_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -172,24 +275,243 @@ export type Database = {
           },
         ]
       }
-      profiles: {
+      medical_records: {
+        Row: {
+          allergies: string | null
+          assessment_plan: string | null
+          chief_complaint: string | null
+          created_at: string
+          doctor_id: string
+          family_history: string | null
+          history_present_illness: string | null
+          id: string
+          medications: string | null
+          notes: string | null
+          past_medical_history: string | null
+          patient_id: string
+          physical_examination: string | null
+          record_date: string
+          review_systems: string | null
+          social_history: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allergies?: string | null
+          assessment_plan?: string | null
+          chief_complaint?: string | null
+          created_at?: string
+          doctor_id: string
+          family_history?: string | null
+          history_present_illness?: string | null
+          id?: string
+          medications?: string | null
+          notes?: string | null
+          past_medical_history?: string | null
+          patient_id: string
+          physical_examination?: string | null
+          record_date?: string
+          review_systems?: string | null
+          social_history?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allergies?: string | null
+          assessment_plan?: string | null
+          chief_complaint?: string | null
+          created_at?: string
+          doctor_id?: string
+          family_history?: string | null
+          history_present_illness?: string | null
+          id?: string
+          medications?: string | null
+          notes?: string | null
+          past_medical_history?: string | null
+          patient_id?: string
+          physical_examination?: string | null
+          record_date?: string
+          review_systems?: string | null
+          social_history?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_records_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_prescriptions: {
         Row: {
           created_at: string
-          full_name: string | null
           id: string
-          role: string | null
+          medical_record_id: string
+          memed_prescription_id: string | null
+          memed_prescription_url: string | null
+          notes: string | null
+          prescription_date: string
+          status: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
-          full_name?: string | null
-          id: string
-          role?: string | null
+          id?: string
+          medical_record_id: string
+          memed_prescription_id?: string | null
+          memed_prescription_url?: string | null
+          notes?: string | null
+          prescription_date?: string
+          status?: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
+          id?: string
+          medical_record_id?: string
+          memed_prescription_id?: string | null
+          memed_prescription_url?: string | null
+          notes?: string | null
+          prescription_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_prescriptions_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          birth_date: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_date: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescription_items: {
+        Row: {
+          created_at: string
+          dosage: string
+          duration: string | null
+          frequency: string
+          id: string
+          instructions: string | null
+          medication_name: string
+          memed_medication_id: string | null
+          prescription_id: string
+          quantity: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          duration?: string | null
+          frequency: string
+          id?: string
+          instructions?: string | null
+          medication_name: string
+          memed_medication_id?: string | null
+          prescription_id: string
+          quantity?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          duration?: string | null
+          frequency?: string
+          id?: string
+          instructions?: string | null
+          medication_name?: string
+          memed_medication_id?: string | null
+          prescription_id?: string
+          quantity?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_items_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "medical_prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
           full_name?: string | null
           id?: string
-          role?: string | null
+          role?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -201,7 +523,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      event_type: "drink" | "meal" | "med" | "bathroom" | "note" | "medication" | "drain" | "vital_signs" | "humor"
+      event_type: "sleep" | "feeding" | "diaper" | "mood" | "bathroom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -329,7 +651,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      event_type: ["drink", "meal", "med", "bathroom", "note", "medication", "drain", "vital_signs", "humor"],
+      event_type: ["drink", "meal", "bathroom", "mood", "medication", "drain", "vital_signs"],
     },
   },
 } as const
