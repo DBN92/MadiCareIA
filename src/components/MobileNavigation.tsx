@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { X, Home, Users, Heart, FileText, Settings, Activity, ChevronRight, User, BarChart3, LogOut } from 'lucide-react'
+import { X, Home, Users, Heart, FileText, Settings, Activity, ChevronRight, User, BarChart3, LogOut, Stethoscope } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 const navigationItems = [
   { title: "Dashboard", url: "/", icon: BarChart3, description: "Visão geral do sistema" },
   { title: "Pacientes", url: "/patients", icon: Users, description: "Gerenciar pacientes" },
+  { title: "Prontuários", url: "/medical-records", icon: Stethoscope, description: "Prontuários médicos" },
   { title: "Cuidados", url: "/care", icon: Heart, description: "Registros de cuidados" },
   { title: "Relatórios", url: "/reports", icon: FileText, description: "Relatórios e análises" },
   { title: "Configurações", url: "/settings", icon: Settings, description: "Configurações do sistema" },

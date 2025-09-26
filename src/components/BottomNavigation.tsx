@@ -4,7 +4,8 @@ import {
   Users, 
   Heart, 
   FileText, 
-  Settings 
+  Settings,
+  Stethoscope
 } from 'lucide-react'
 
 const navigationItems = [
@@ -19,6 +20,12 @@ const navigationItems = [
     url: "/patients", 
     icon: Users, 
     shortTitle: "Pacientes"
+  },
+  { 
+    title: "Prontuários", 
+    url: "/medical-records", 
+    icon: Stethoscope, 
+    shortTitle: "Prontuários"
   },
   { 
     title: "Cuidados", 
