@@ -10,6 +10,7 @@ import { Patient } from '@/hooks/usePatients';
 import { FamilyLayout } from '@/components/FamilyLayout';
 import FamilyCare from '@/components/FamilyCare';
 import { MedicalTimeline } from '@/components/MedicalTimeline';
+import { FamilyPrescriptions } from '@/components/FamilyPrescriptions';
 import { 
   Heart, 
   Droplets, 
@@ -196,31 +197,6 @@ const FamilyDashboard: React.FC = () => {
 
   const renderDashboard = () => (
     <div className="space-y-4">
-      {/* Patient Info - Always Visible */}
-      <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center overflow-hidden">
-              {patient.photo ? (
-                <img 
-                  src={patient.photo} 
-                  alt={patient.full_name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="h-6 w-6 text-white" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold">{patient.full_name}</h2>
-              <p className="text-blue-100 text-sm">
-                {patient.bed && `Leito: ${patient.bed}`}
-                {patient.birth_date && ` • Nascimento: ${new Date(patient.birth_date).toLocaleDateString()}`}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Latest Humor Status */}
       {latestHumorEvent && (
@@ -398,6 +374,19 @@ const FamilyDashboard: React.FC = () => {
           Histórico médico completo de {patient?.full_name}
         </p>
       </div>
+
+      {/* Seção de Receitas Médicas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Pill className="h-5 w-5 text-green-600" />
+            Receitas Médicas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+           <FamilyPrescriptions patientId={patient?.id || ''} permissions={permissions} />
+         </CardContent>
+      </Card>
 
       <MedicalTimeline patientId={patient?.id || ''} />
     </div>

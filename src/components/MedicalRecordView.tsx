@@ -32,7 +32,7 @@ type MedicalPrescription = Database['public']['Tables']['medical_prescriptions']
 
 interface MedicalRecordWithRelations extends MedicalRecord {
   patient: Patient;
-  doctor: Profile;
+  profiles: Profile;
   diagnoses: MedicalDiagnosis[];
   exams: MedicalExam[];
   prescriptions: MedicalPrescription[];
@@ -67,7 +67,7 @@ const MedicalRecordView: React.FC<MedicalRecordViewProps> = ({
         .select(`
           *,
           patient:patients(*),
-          doctor:profiles(*)
+          profiles:profiles!medical_records_doctor_id_fkey(*)
         `)
         .eq('id', recordId)
         .single();
@@ -228,8 +228,8 @@ const MedicalRecordView: React.FC<MedicalRecordViewProps> = ({
             
             <div>
               <h4 className="font-semibold text-gray-700 mb-2">Médico Responsável</h4>
-              <p className="text-lg">Dr(a). {record.doctor.full_name}</p>
-              <p className="text-sm text-gray-600">{record.doctor.email}</p>
+              <p className="text-lg">Dr(a). {record.profiles.full_name}</p>
+              <p className="text-sm text-gray-600">{record.profiles.email}</p>
             </div>
             
             <div>

@@ -55,7 +55,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface MedicalRecordWithRelations extends MedicalRecord {
   patient: Patient;
-  doctor: Profile;
+  profiles: Profile;
 }
 
 interface StatCard {
@@ -146,7 +146,7 @@ const MedicalRecords: React.FC = () => {
         .select(`
           *,
           patient:patients(*),
-          doctor:profiles(*)
+          profiles:profiles!medical_records_doctor_id_fkey(*)
         `)
         .order('record_date', { ascending: false });
 
@@ -254,7 +254,7 @@ const MedicalRecords: React.FC = () => {
         record.chief_complaint?.toLowerCase().includes(searchLower) ||
         record.assessment_plan?.toLowerCase().includes(searchLower) ||
         record.patient.name.toLowerCase().includes(searchLower) ||
-        record.doctor.full_name?.toLowerCase().includes(searchLower)
+        record.profiles.full_name?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -302,8 +302,8 @@ const MedicalRecords: React.FC = () => {
           bValue = b.patient.name.toLowerCase();
           break;
         case 'doctor':
-          aValue = a.doctor.full_name?.toLowerCase() || '';
-          bValue = b.doctor.full_name?.toLowerCase() || '';
+          aValue = a.profiles.full_name?.toLowerCase() || '';
+          bValue = b.profiles.full_name?.toLowerCase() || '';
           break;
         case 'status':
           aValue = a.status;
@@ -774,7 +774,7 @@ const MedicalRecords: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 flex-shrink-0" />
                               <span className="truncate">
-                                Dr(a). {record.doctor.full_name}
+                                Dr(a). {record.profiles.full_name}
                               </span>
                             </div>
                           </div>

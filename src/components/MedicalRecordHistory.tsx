@@ -32,7 +32,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface MedicalRecordWithRelations extends MedicalRecord {
   patient: Patient;
-  doctor: Profile;
+  profiles: Profile;
 }
 
 interface MedicalRecordHistoryProps {
@@ -79,7 +79,7 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
         .select(`
           *,
           patient:patients(*),
-          doctor:profiles(*)
+          profiles:profiles!medical_records_doctor_id_fkey(*)
         `)
         .order('record_date', { ascending: false });
 
@@ -128,7 +128,7 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
         record.chief_complaint?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         record.assessment_plan?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         record.patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.doctor.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        record.profiles.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -371,7 +371,7 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        Dr(a). {record.doctor.full_name}
+                        Dr(a). {record.profiles.full_name}
                       </div>
                     </div>
 

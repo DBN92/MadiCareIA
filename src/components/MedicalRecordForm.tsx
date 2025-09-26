@@ -7,13 +7,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Save, FileText, User, Stethoscope, Pill, AlertTriangle, Users, History, Eye, ClipboardList, Plus, Trash2 } from 'lucide-react';
+import { CalendarIcon, Save, FileText, User, Stethoscope, Pill, AlertTriangle, Users, History, Eye, ClipboardList, Plus, Trash2, Activity, FileImage, Clipboard } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/integrations/supabase/types';
-import PrescriptionForm from './PrescriptionForm';
+import PrescricaoMedica from './PrescricaoMedica';
+import { VitalSignsForm } from './VitalSignsForm';
+import { DiagnosticCodesManager } from './DiagnosticCodesManager';
+import { MedicationManager } from './MedicationManager';
+import { MedicalAttachmentsManager } from './MedicalAttachmentsManager';
+import { MedicalHistoryTimeline } from './MedicalHistoryTimeline';
+import AtestadoMedico from './AtestadoMedico';
 
 type MedicalRecord = Database['public']['Tables']['medical_records']['Insert'];
 type Patient = Database['public']['Tables']['patients']['Row'];
@@ -56,6 +62,7 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
   const [recordDoctor, setRecordDoctor] = useState<Profile | null>(null);
   const [recordDate, setRecordDate] = useState<Date>(new Date());
   const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+  const [showAtestadoForm, setShowAtestadoForm] = useState(false);
 
   // Dados do prontuário
   const [formData, setFormData] = useState<MedicalRecord>({
@@ -83,6 +90,12 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
 
   // Exames
   const [exams, setExams] = useState<Exam[]>([]);
+
+  // Estados para os novos componentes
+  const [vitalSigns, setVitalSigns] = useState<any>(null);
+  const [medications, setMedications] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [showMedicalHistory, setShowMedicalHistory] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -159,7 +172,7 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
         .from('medical_records')
         .select(`
           *,
-          doctor:profiles!medical_records_doctor_id_fkey(*)
+          profiles:profiles!medical_records_doctor_id_fkey(*)
         `)
         .eq('id', id)
         .single();
@@ -169,8 +182,8 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
         setRecordDate(new Date(record.record_date));
         
         // Definir o médico do registro (quem criou)
-        if (record.doctor) {
-          setRecordDoctor(record.doctor);
+        if (record.profiles) {
+          setRecordDoctor(record.profiles);
         }
       }
 
@@ -268,8 +281,14 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
   const handleSave = async () => {
     try {
       setLoading(true);
+      console.log('Iniciando salvamento do prontuário...');
+      console.log('FormData:', formData);
 
       if (!formData.patient_id || !formData.doctor_id) {
+        console.log('Erro: Campos obrigatórios não preenchidos', {
+          patient_id: formData.patient_id,
+          doctor_id: formData.doctor_id
+        });
         toast({
           title: "Erro",
           description: "Paciente e médico são obrigatórios",
@@ -283,22 +302,32 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
       // Salvar prontuário
       if (recordId) {
         // Atualizar
+        console.log('Atualizando prontuário existente:', recordId);
         const { error } = await supabase
           .from('medical_records')
           .update(formData)
           .eq('id', recordId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao atualizar prontuário:', error);
+          throw error;
+        }
+        console.log('Prontuário atualizado com sucesso');
       } else {
         // Criar novo
+        console.log('Criando novo prontuário...');
         const { data: newRecord, error } = await supabase
           .from('medical_records')
           .insert(formData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao criar novo prontuário:', error);
+          throw error;
+        }
         savedRecordId = newRecord.id;
+        console.log('Novo prontuário criado com ID:', savedRecordId);
       }
 
       // Salvar diagnósticos
@@ -351,6 +380,102 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
 
           if (error) throw error;
         }
+
+        // Salvar medicamentos como prescrição médica
+        if (medications && medications.length > 0) {
+          try {
+            // Criar prescrição médica
+            const { data: prescriptionData, error: prescriptionError } = await supabase
+              .from('medical_prescriptions')
+              .insert({
+                medical_record_id: savedRecordId,
+                prescription_date: formData.record_date,
+                status: 'active',
+                notes: 'Prescrição gerada automaticamente do prontuário médico'
+              })
+              .select()
+              .single();
+
+            if (prescriptionError) {
+              console.warn('Erro ao criar prescrição:', prescriptionError);
+            } else if (prescriptionData) {
+              // Salvar itens da prescrição
+              const prescriptionItems = medications.map(med => ({
+                prescription_id: prescriptionData.id,
+                medication_name: med.name,
+                dosage: `${med.dosage} ${med.unit}`,
+                frequency: med.frequency,
+                duration: med.duration_days ? `${med.duration_days} dias` : undefined,
+                instructions: med.instructions,
+                quantity: med.duration_days ? Math.ceil(med.duration_days * parseFloat(med.frequency.replace(/[^\d]/g, '') || '1')).toString() : undefined
+              }));
+
+              const { error: itemsError } = await supabase
+                .from('prescription_items')
+                .insert(prescriptionItems);
+
+              if (itemsError) {
+                console.warn('Erro ao salvar itens da prescrição:', itemsError);
+              }
+            }
+          } catch (error) {
+            console.warn('Erro ao processar medicamentos:', error);
+          }
+        }
+
+        // Salvar anexos médicos
+        if (attachments && attachments.length > 0) {
+          // Remover anexos existentes
+          await supabase
+            .from('medical_record_attachments')
+            .delete()
+            .eq('medical_record_id', savedRecordId);
+
+          // Inserir novos anexos
+          const attachmentsToInsert = attachments.map(attachment => ({
+            medical_record_id: savedRecordId,
+            file_name: attachment.name || attachment.fileName,
+            file_path: attachment.path || attachment.filePath,
+            file_size: attachment.size || attachment.fileSize,
+            attachment_type: attachment.type || attachment.attachmentType || 'document'
+          }));
+
+          if (attachmentsToInsert.length > 0) {
+            const { error } = await supabase
+              .from('medical_record_attachments')
+              .insert(attachmentsToInsert);
+
+            if (error) {
+              console.warn('Erro ao salvar anexos:', error);
+              // Não interrompe o salvamento por erro nos anexos
+            }
+          }
+        }
+
+        // Salvar sinais vitais na tabela events
+        if (vitalSigns && Object.keys(vitalSigns).length > 0) {
+          const vitalSignsData = {
+            patient_id: formData.patient_id,
+            type: 'mood' as const, // Usando tipo válido do enum
+            date: formData.record_date,
+            systolic_bp: vitalSigns.blood_pressure_systolic || null,
+            diastolic_bp: vitalSigns.blood_pressure_diastolic || null,
+            heart_rate: vitalSigns.heart_rate || null,
+            temperature: vitalSigns.temperature || null,
+            oxygen_saturation: vitalSigns.oxygen_saturation || null,
+            respiratory_rate: vitalSigns.respiratory_rate || null,
+            notes: `Sinais vitais do prontuário médico - ID: ${savedRecordId}`
+          };
+
+          const { error: vitalSignsError } = await supabase
+            .from('events')
+            .insert(vitalSignsData);
+
+          if (vitalSignsError) {
+            console.warn('Erro ao salvar sinais vitais:', vitalSignsError);
+            // Não interrompe o salvamento por erro nos sinais vitais
+          }
+        }
       }
 
       toast({
@@ -363,10 +488,20 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
       }
 
     } catch (error) {
-      console.error('Erro ao salvar prontuário:', error);
+      console.error('Erro detalhado ao salvar prontuário:', error);
+      console.error('Stack trace:', error.stack);
+      console.error('Dados do formulário no momento do erro:', formData);
+      
+      // Verificar se é um erro específico do Supabase
+      if (error?.code) {
+        console.error('Código do erro Supabase:', error.code);
+        console.error('Mensagem do erro Supabase:', error.message);
+        console.error('Detalhes do erro Supabase:', error.details);
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao salvar prontuário médico",
+        description: `Erro ao salvar prontuário médico: ${error?.message || 'Erro desconhecido'}`,
         variant: "destructive"
       });
     } finally {
@@ -596,6 +731,23 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
         </CardContent>
       </Card>
 
+      {/* Sinais Vitais */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Sinais Vitais
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+           <VitalSignsForm
+             initialValues={vitalSigns}
+             onSave={setVitalSigns}
+             readOnly={false}
+           />
+         </CardContent>
+      </Card>
+
       {/* Exame Físico */}
       <Card>
         <CardHeader>
@@ -678,6 +830,35 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
             Adicionar Diagnóstico
           </Button>
         </CardContent>
+      </Card>
+
+      {/* Códigos Diagnósticos Avançados */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clipboard className="h-5 w-5" />
+            Códigos Diagnósticos (CID-10)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+           <DiagnosticCodesManager
+             initialCodes={diagnoses.map(d => ({
+               code: d.diagnosis_code || '',
+               description: d.diagnosis_text,
+               type: 'CID10' as const,
+               is_primary: d.primary_diagnosis
+             }))}
+             onCodesChange={(codes) => {
+               const newDiagnoses = codes.map(code => ({
+                 diagnosis_text: code.description,
+                 diagnosis_code: code.code,
+                 primary_diagnosis: code.is_primary || false
+               }));
+               setDiagnoses(newDiagnoses);
+             }}
+             readOnly={false}
+           />
+         </CardContent>
       </Card>
 
       {/* Exames Solicitados */}
@@ -789,23 +970,111 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
 
           {/* Botão para abrir prescrição */}
           <div className="pt-4 border-t">
-            <Button
-              type="button"
-              onClick={() => setShowPrescriptionForm(true)}
-              className="w-full"
-            >
-              <Pill className="h-4 w-4 mr-2" />
-              Criar Prescrição Médica
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={() => setShowPrescriptionForm(true)}
+                className="flex-1"
+              >
+                <Pill className="h-4 w-4 mr-2" />
+                Criar Prescrição Médica
+              </Button>
+              
+              {!showMedicalHistory && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowMedicalHistory(true)}
+                  className="flex-1"
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Ver Histórico Médico
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Gerenciamento de Medicações */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Pill className="h-5 w-5" />
+            Medicações
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MedicationManager
+            initialMedications={medications}
+            onMedicationsChange={setMedications}
+            readOnly={false}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Anexos Médicos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileImage className="h-5 w-5" />
+            Anexos Médicos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MedicalAttachmentsManager
+            initialAttachments={attachments}
+            onAttachmentsChange={setAttachments}
+            readOnly={false}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Histórico Médico */}
+      {formData.patient_id && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Histórico Médico do Paciente
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMedicalHistory(!showMedicalHistory)}
+              >
+                {showMedicalHistory ? 'Ocultar' : 'Mostrar'}
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          {showMedicalHistory && (
+            <CardContent>
+              <MedicalHistoryTimeline
+                readOnly={true}
+                showFilters={true}
+                groupByPeriod="month"
+              />
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       {/* Ações */}
       <div className="flex justify-end gap-4">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
+          </Button>
+        )}
+        {recordId && (
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => setShowAtestadoForm(true)}
+            className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Emitir Atestado
           </Button>
         )}
         <Button onClick={handleSave} disabled={loading}>
@@ -819,18 +1088,32 @@ const MedicalRecordForm: React.FC<MedicalRecordFormProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <PrescriptionForm
-                medicalRecordId={recordId}
+              <PrescricaoMedica
                 patientId={formData.patient_id}
-                onSave={() => {
-                  setShowPrescriptionForm(false);
-                  toast({
-                    title: "Sucesso",
-                    description: "Prescrição criada com sucesso",
-                  });
-                }}
-                onCancel={() => setShowPrescriptionForm(false)}
+                patientName={patients.find(p => p.id === formData.patient_id)?.name || ''}
+                doctorName={recordDoctor?.full_name || currentUser?.full_name || ''}
+                doctorCrm=""
+                doctorSpecialty=""
+                onClose={() => setShowPrescriptionForm(false)}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Atestado Médico */}
+      {showAtestadoForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <AtestadoMedico
+                 patientId={formData.patient_id}
+                 patientName={patients.find(p => p.id === formData.patient_id)?.name || ''}
+                 doctorName={recordDoctor?.full_name || currentUser?.full_name || ''}
+                 doctorCrm=""
+                 doctorSpecialty=""
+                 onClose={() => setShowAtestadoForm(false)}
+               />
             </div>
           </div>
         </div>
