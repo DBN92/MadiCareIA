@@ -22,7 +22,8 @@ import {
   Database,
   Trash2,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  Smile
 } from "lucide-react"
 
 export default function Care() {
@@ -64,6 +65,7 @@ export default function Care() {
       case 'note': return Activity
       case 'meal': return Utensils
       case 'bathroom': return Toilet
+      case 'humor': return Smile
       default: return Heart
     }
   }
@@ -81,11 +83,16 @@ export default function Care() {
 
   const getTypeName = (type: string) => {
     switch (type) {
+      case 'medication': return 'Medicação'
+      case 'vital_signs': return 'Sinais Vitais'
+      case 'drain': return 'Dreno'
       case 'drink': return 'Líquidos'
+      case 'mood': return 'Humor'
+      case 'humor': return 'Humor'
       case 'med': return 'Medicamento'
-      case 'note': return 'Anotação'
       case 'meal': return 'Alimentação'
       case 'bathroom': return 'Banheiro'
+      case 'note': return 'Anotação'
       default: return type
     }
   }
@@ -268,27 +275,43 @@ export default function Care() {
                 <CareForm 
                   patientId={selectedPatientId}
                   onSave={async (data) => {
-                    try {
-                      const eventType = data.type === 'liquid' ? 'drink' :
-                                      data.type === 'medication' ? 'med' :
-                                      data.type === 'drainage' ? 'note' :
-                                      data.type as 'drink' | 'meal' | 'med' | 'bathroom' | 'note'
-                      
-                      await addEvent({
-                        patient_id: selectedPatientId!,
-                        type: eventType,
-                        occurred_at: data.occurred_at,
-                        volume_ml: data.volume_ml,
-                        meal_desc: data.meal_desc,
-                        med_name: data.med_name,
-                        med_dose: data.med_dose,
-                        bathroom_type: data.bathroom_type,
-                        notes: data.notes
-                      })
-                    } catch (error) {
-                      console.error("Erro ao salvar:", error)
+                  try {
+                    // Map the form data to the correct event type enum
+                    let eventType: 'sleep' | 'feeding' | 'diaper' | 'mood' | 'bathroom';
+                    switch (data.type) {
+                      case 'liquid':
+                      case 'food':
+                        eventType = 'feeding';
+                        break;
+                      case 'bathroom':
+                        eventType = 'bathroom';
+                        break;
+                      case 'humor':
+                        eventType = 'mood';
+                        break;
+                      case 'medication':
+                      case 'drain':
+                      case 'vitals':
+                        eventType = 'sleep'; // Default fallback
+                        break;
+                      default:
+                        eventType = 'sleep';
                     }
-                  }}
+
+                    await addEvent({
+                      patient_id: data.patient_id,
+                      date: data.date,
+                      type: eventType,
+                      notes: data.notes,
+                      volume_ml: data.volume_ml,
+                      bathroom_type: data.bathroom_type,
+                      mood_scale: data.mood_scale
+                    });
+                    await refetch();
+                  } catch (error) {
+                    console.error('Error saving event:', error);
+                  }
+                }}
                 />
               </div>
             </div>
@@ -345,10 +368,14 @@ export default function Care() {
                   className="px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm w-full sm:w-auto"
                 >
                   <option value="all">Todas as categorias</option>
+                  <option value="medication">Medicação</option>
+                  <option value="vital_signs">Sinais Vitais</option>
+                  <option value="drain">Dreno</option>
                   <option value="drink">Líquidos</option>
+                  <option value="mood">Humor</option>
+                  <option value="humor">Humor</option>
                   <option value="med">Medicamentos</option>
                   <option value="meal">Alimentação</option>
-                  <option value="note">Anotações</option>
                   <option value="bathroom">Banheiro</option>
                 </select>
               </div>
@@ -358,46 +385,100 @@ export default function Care() {
                 {filteredEvents.slice(0, 10).map((event) => {
                   const patient = patients.find(p => p.id === event.patient_id)
                   const Icon = getTypeIcon(event.type)
-                  const description = event.type === 'drink' ? `${event.volume_ml}ml` :
-                                   event.type === 'med' ? `${event.med_name} - ${event.med_dose}` :
-                                   event.type === 'note' ? event.notes || 'Anotação' :
-                                   event.type === 'meal' ? event.meal_desc :
-                                   event.type === 'bathroom' ? event.bathroom_type :
-                                   event.notes || 'Sem descrição'
+                  
+                  // Função para formatar todos os dados do evento
+                  const formatEventData = (event: any) => {
+                    const data = []
+                    
+                    // Dados específicos por tipo
+                    if (event.type === 'drink' && event.volume_ml) {
+                      data.push(`Volume: ${event.volume_ml}ml`)
+                    }
+                    if (event.type === 'medication' && event.med_name) {
+                      data.push(`Medicamento: ${event.med_name}`)
+                      if (event.med_dose) data.push(`Dose: ${event.med_dose}`)
+                    }
+                    if (event.type === 'meal' && event.meal_desc) {
+                      data.push(`Refeição: ${event.meal_desc}`)
+                    }
+                    if (event.type === 'bathroom' && event.bathroom_type) {
+                      data.push(`Tipo: ${event.bathroom_type}`)
+                    }
+                    if (event.type === 'mood' && event.mood_scale) {
+                      data.push(`Escala de Humor: ${event.mood_scale}/5`)
+                    }
+                    
+                    // Dados gerais
+                    if (event.volume_ml && event.type !== 'drink') {
+                      data.push(`Volume: ${event.volume_ml}ml`)
+                    }
+                    if (event.mood_scale && event.type !== 'mood') {
+                      data.push(`Humor: ${event.mood_scale}/5`)
+                    }
+                    if (event.bathroom_type && event.type !== 'bathroom') {
+                      data.push(`Banheiro: ${event.bathroom_type}`)
+                    }
+                    if (event.notes) {
+                      data.push(`Observações: ${event.notes}`)
+                    }
+                    
+                    return data
+                  }
+                  
+                  const eventData = formatEventData(event)
                   
                   return (
-                    <div key={event.id} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className={`p-1.5 sm:p-2 rounded-lg bg-muted ${getTypeColor(event.type)} flex-shrink-0`}>
-                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground mb-1 text-sm sm:text-base">{getTypeName(event.type)}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{description}</p>
-                        <p className="text-xs text-muted-foreground mt-1 truncate">
-                          Paciente: {patient?.full_name || 'Paciente removido'} - Leito {patient?.bed || 'N/A'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-right">
-                          <p className="text-xs sm:text-sm font-medium text-foreground">
-                            {new Date(event.occurred_at).toLocaleTimeString('pt-BR', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(event.occurred_at).toLocaleDateString('pt-BR')}
+                    <div key={event.id} className="border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                      {/* Cabeçalho do evento */}
+                      <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
+                        <div className={`p-1.5 sm:p-2 rounded-lg bg-muted ${getTypeColor(event.type)} flex-shrink-0`}>
+                          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium text-foreground text-sm sm:text-base">{getTypeName(event.type)}</p>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="text-right">
+                                <p className="text-xs sm:text-sm font-medium text-foreground">
+                                  {new Date(event.created_at).toLocaleTimeString('pt-BR', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(event.created_at).toLocaleDateString('pt-BR')}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteEvent(event.id)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 p-1 sm:p-2"
+                              >
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                            Paciente: {patient?.full_name || 'Paciente removido'} - Leito {patient?.bed || 'N/A'}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteEvent(event.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 p-1 sm:p-2"
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
                       </div>
+                      
+                      {/* Dados detalhados do evento */}
+                      {eventData.length > 0 && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-border/50">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                            {eventData.map((item, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-primary/60 rounded-full flex-shrink-0"></div>
+                                <span className="text-xs sm:text-sm text-foreground font-medium">{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

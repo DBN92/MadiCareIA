@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ProfileImageUpload } from '@/components/ProfileImageUpload'
 import { LogoUpload } from '@/components/LogoUpload'
+import { SettingsHistory } from '@/components/SettingsHistory'
 import { 
   Settings as SettingsIcon, 
   Users, 
@@ -33,7 +34,8 @@ import {
   MessageCircle,
   Bot,
   Key,
-  Sliders
+  Sliders,
+  History
 } from "lucide-react"
 import {
   Table,
@@ -91,7 +93,7 @@ interface LogEntry {
 export default function Settings() {
   const { user, updateUserProfile } = useAuth()
   const { logs, addLog, clearLogs, exportLogs, getLogsByLevel } = useSystemLogs()
-  const { settings: globalChatSettings, saveSettings: saveChatSettings, resetToDefaults: resetChatSettings, validateSettings } = useChatSettings()
+  const { settings: globalChatSettings, saveSettings: saveChatSettings, resetToDefaults: resetChatSettings, validateSettings, rollbackToVersion, settingsHistory } = useChatSettings()
   
   const [users, setUsers] = useState<User[]>([
     {
@@ -645,6 +647,13 @@ export default function Settings() {
                 >
                   <Bot className="h-4 w-4 flex-shrink-0" />
                   Chat IA
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="history" 
+                  className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap px-4 py-2.5 rounded-md"
+                >
+                  <History className="h-4 w-4 flex-shrink-0" />
+                  Histórico
                 </TabsTrigger>
                 <TabsTrigger 
                   value="logs" 
@@ -1352,6 +1361,79 @@ export default function Settings() {
                 </div>
               </div>
             </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Histórico de Configurações */}
+        <TabsContent value="history" className="flex-1 overflow-y-auto p-6">
+          <Card className="max-w-7xl mx-auto">
+            <CardHeader>
+              <CardTitle>Histórico de Configurações</CardTitle>
+              <CardDescription>
+                Visualize e gerencie o histórico de versões das configurações do sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <SettingsHistory
+                 versions={settingsHistory.versions}
+                 onRollback={(versionId) => {
+                   const success = rollbackToVersion(versionId);
+                   if (success) {
+                     toast({
+                       title: "Rollback realizado",
+                       description: "Configurações restauradas com sucesso",
+                     });
+                     addLog('info', 'Rollback de Configurações', `Usuário ${user?.name || 'Anônimo'} restaurou configurações para versão ${versionId}`);
+                   } else {
+                     toast({
+                       title: "Erro no rollback",
+                       description: "Não foi possível restaurar as configurações",
+                       variant: "destructive",
+                     });
+                   }
+                 }}
+                 onDelete={(versionId) => {
+                   settingsHistory.deleteVersion(versionId);
+                   toast({
+                     title: "Versão excluída",
+                     description: "Versão removida do histórico",
+                   });
+                   addLog('info', 'Exclusão de Versão', `Usuário ${user?.name || 'Anônimo'} excluiu versão ${versionId} do histórico`);
+                 }}
+                 onExport={() => {
+                    settingsHistory.exportHistory();
+                    toast({
+                      title: "Histórico exportado",
+                      description: "Arquivo baixado com sucesso",
+                    });
+                    addLog('info', 'Exportação de Histórico', `Usuário ${user?.name || 'Anônimo'} exportou histórico de configurações`);
+                  }}
+                  onImport={(file) => {
+                    settingsHistory.importHistory(file).then((success) => {
+                      if (success) {
+                        toast({
+                          title: "Histórico importado",
+                          description: "Configurações importadas com sucesso",
+                        });
+                        addLog('info', 'Importação de Histórico', `Usuário ${user?.name || 'Anônimo'} importou histórico de configurações`);
+                      } else {
+                        toast({
+                          title: "Erro na importação",
+                          description: "Arquivo inválido ou corrompido",
+                          variant: "destructive",
+                        });
+                      }
+                    }).catch(() => {
+                      toast({
+                        title: "Erro na importação",
+                        description: "Não foi possível processar o arquivo",
+                        variant: "destructive",
+                      });
+                    });
+                  }}
+                 currentVersionId={settingsHistory.getActiveVersion()?.versionId}
+               />
+             </CardContent>
           </Card>
         </TabsContent>
 

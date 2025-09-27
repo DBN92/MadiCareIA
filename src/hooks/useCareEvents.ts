@@ -3,9 +3,13 @@ import { supabase } from '@/integrations/supabase/client'
 import { Tables } from '@/integrations/supabase/types'
 
 export type CareEvent = Tables<'events'> & {
+  occurred_at?: string
+  med_name?: string
+  meal_desc?: string
   humor_scale?: number
   happiness_scale?: number
   humor_notes?: string
+  consumption_percentage?: number
 }
 
 export const useCareEvents = (patientId?: string) => {
@@ -38,7 +42,7 @@ export const useCareEvents = (patientId?: string) => {
     }
   }
 
-  const addEvent = async (event: Omit<CareEvent, 'id' | 'created_at'>) => {
+  const addEvent = async (event: Omit<Tables<'events'>, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -78,15 +82,15 @@ export const useCareEvents = (patientId?: string) => {
   const getTodayStats = () => {
     const today = new Date().toISOString().split('T')[0]
     const todayEvents = events.filter(event => 
-      event.occurred_at.startsWith(today)
+      event.occurred_at && event.occurred_at.startsWith(today)
     )
 
     return {
       total: todayEvents.length,
-      liquids: todayEvents.filter(e => e.type === 'drink').length,
-      medications: todayEvents.filter(e => e.type === 'med').length,
-      drainage: todayEvents.filter(e => e.type === 'note').length,
-      meals: todayEvents.filter(e => e.type === 'meal').length,
+      liquids: todayEvents.filter(e => e.type === 'feeding').length,
+      medications: todayEvents.filter(e => e.type === 'mood').length,
+      drainage: todayEvents.filter(e => e.type === 'diaper').length,
+      meals: todayEvents.filter(e => e.type === 'feeding').length,
       bathroom: todayEvents.filter(e => e.type === 'bathroom').length
     }
   }

@@ -36,7 +36,7 @@ const Reports = () => {
     const dailyStats: Record<string, any> = {}
     
     patientEvents.forEach(event => {
-      const date = event.occurred_at.split('T')[0]
+      const date = event.date.split('T')[0]
       
       if (!dailyStats[date]) {
         dailyStats[date] = {
@@ -64,33 +64,16 @@ const Reports = () => {
 
       // Processar diferentes tipos de eventos
       switch (event.type) {
-        case 'meal':
-          dailyStats[date].alimentosCount++
-          if (event.volume_ml) {
-            dailyStats[date].alimentosPercent += event.volume_ml
-          }
-          break
-        case 'drink':
-          dailyStats[date].totalLiquidos++
-          if (event.volume_ml) {
-            dailyStats[date].liquidosML += event.volume_ml
+        case 'feeding':
+          if (event.consumption_percentage) {
+            dailyStats[date].alimentosPercent += event.consumption_percentage
+            dailyStats[date].alimentosCount++
           }
           break
         case 'bathroom':
           dailyStats[date].banheiroCount++
-          if (event.bathroom_type === 'urine' && event.volume_ml) {
+          if (event.volume_ml) {
             dailyStats[date].urinaML += event.volume_ml
-          }
-          break
-        case 'medication':
-          dailyStats[date].medicamentosCount++
-          break
-        case 'drain':
-          if (event.left_amount) {
-            dailyStats[date].drenosML += event.left_amount
-          }
-          if (event.right_amount) {
-            dailyStats[date].drenosML += event.right_amount
           }
           break
         case 'mood':
@@ -98,16 +81,6 @@ const Reports = () => {
             dailyStats[date].humorScore += event.mood_scale
             dailyStats[date].humorCount++
           }
-          break
-        case 'vital_signs':
-          const vitals = dailyStats[date].sinaisVitais
-          if (event.systolic_bp) vitals.pressaoSistolica += event.systolic_bp
-          if (event.diastolic_bp) vitals.pressaoDiastolica += event.diastolic_bp
-          if (event.heart_rate) vitals.frequenciaCardiaca += event.heart_rate
-          if (event.temperature) vitals.temperatura += event.temperature
-          if (event.oxygen_saturation) vitals.saturacaoOxigenio += event.oxygen_saturation
-          if (event.respiratory_rate) vitals.frequenciaRespiratoria += event.respiratory_rate
-          vitals.count++
           break
       }
     })

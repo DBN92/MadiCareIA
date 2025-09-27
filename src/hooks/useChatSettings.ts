@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSettingsHistory } from './useSettingsHistory';
 
 export interface ChatSettings {
   apiKey: string;
@@ -11,7 +12,7 @@ export interface ChatSettings {
 }
 
 const DEFAULT_SETTINGS: ChatSettings = {
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+  apiKey: '', // Não usar variável de ambiente como padrão por segurança
   model: 'gpt-4o-mini',
   temperature: 0.7,
   maxTokens: 1000,
@@ -39,24 +40,69 @@ const STORAGE_KEY = 'medicare-chat-settings';
 export function useChatSettings() {
   const [settings, setSettings] = useState<ChatSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Hook para gerenciar histórico de versões
+  const settingsHistory = useSettingsHistory('chat');
 
   // Carrega configurações do localStorage
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedSettings = JSON.parse(stored);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsedSettings });
+      // Primeiro, tentar carregar da versão ativa do histórico
+      const activeVersion = settingsHistory.getActiveVersion();
+      if (activeVersion) {
+        const loadedSettings = { ...DEFAULT_SETTINGS, ...activeVersion.settingsData };
+        // Se não há API key nas configurações salvas, tentar usar a variável de ambiente
+        if (!loadedSettings.apiKey) {
+          loadedSettings.apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+        }
+        setSettings(loadedSettings);
+      } else {
+        // Fallback para localStorage antigo
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsedSettings = JSON.parse(stored);
+          const loadedSettings = { ...DEFAULT_SETTINGS, ...parsedSettings };
+          // Se não há API key nas configurações salvas, tentar usar a variável de ambiente
+          if (!loadedSettings.apiKey) {
+            loadedSettings.apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+          }
+          setSettings(loadedSettings);
+          
+          // Migrar para o sistema de histórico
+          settingsHistory.createVersion(loadedSettings, {
+            versionName: 'Migração automática',
+            description: 'Configurações migradas do sistema antigo',
+            tags: ['migration']
+          });
+        } else {
+          // Criar versão inicial com configurações padrão
+          const initialSettings = { ...DEFAULT_SETTINGS };
+          // Para configuração inicial, usar variável de ambiente se disponível
+          if (!initialSettings.apiKey) {
+            initialSettings.apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+          }
+          setSettings(initialSettings);
+          
+          settingsHistory.createVersion(initialSettings, {
+            versionName: 'Configuração inicial',
+            description: 'Configurações padrão do sistema',
+            tags: ['initial', 'default']
+          });
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configurações do chat:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [settingsHistory]);
 
-  // Salva as configurações no localStorage
-  const saveSettings = (newSettings: ChatSettings) => {
+  // Salva as configurações no localStorage e cria nova versão no histórico
+  const saveSettings = (newSettings: ChatSettings, versionOptions?: {
+    versionName?: string;
+    description?: string;
+    tags?: string[];
+  }) => {
     try {
       // Validação adicional para evitar salvar API key inválida
       if (newSettings.apiKey === 'your-openai-api-key-here') {
@@ -64,9 +110,19 @@ export function useChatSettings() {
         return false;
       }
       
+      // Salvar no localStorage (compatibilidade)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
       setSettings(newSettings);
-      return true;
+      
+      // Criar nova versão no histórico
+      const version = settingsHistory.createVersion(newSettings, {
+        versionName: versionOptions?.versionName || `Atualização ${new Date().toLocaleString('pt-BR')}`,
+        description: versionOptions?.description || 'Configurações atualizadas',
+        tags: versionOptions?.tags || ['update'],
+        createdBy: 'Usuário' // TODO: Integrar com sistema de autenticação
+      });
+      
+      return version !== null;
     } catch (error) {
       console.error('Erro ao salvar configurações do chat:', error);
       return false;
@@ -84,7 +140,37 @@ export function useChatSettings() {
 
   // Restaura configurações padrão
   const resetToDefaults = () => {
-    return saveSettings(DEFAULT_SETTINGS);
+    return saveSettings(DEFAULT_SETTINGS, {
+      versionName: 'Restauração para padrões',
+      description: 'Configurações restauradas para os valores padrão do sistema',
+      tags: ['reset', 'default']
+    });
+  };
+
+  // Função para fazer rollback para uma versão específica
+  const rollbackToVersion = (versionId: string) => {
+    try {
+      const version = settingsHistory.getVersionById(versionId);
+      if (!version) {
+        console.error('Versão não encontrada:', versionId);
+        return false;
+      }
+
+      // Ativar a versão no histórico
+      const success = settingsHistory.activateVersion(versionId);
+      if (success) {
+        // Atualizar configurações atuais
+        setSettings({ ...DEFAULT_SETTINGS, ...version.settingsData });
+        // Salvar no localStorage para compatibilidade
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(version.settingsData));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Erro ao fazer rollback:', error);
+      return false;
+    }
   };
 
   // Valida se as configurações estão válidas
@@ -133,6 +219,8 @@ export function useChatSettings() {
     saveSettings,
     updateSetting,
     resetToDefaults,
-    validateSettings
+    rollbackToVersion,
+    validateSettings,
+    settingsHistory
   };
 }

@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { useCareEvents } from "@/hooks/useCareEvents"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { VitalSignsCamera } from "@/components/VitalSignsCamera"
 import { VitalSignsData } from "@/services/vitalSignsOCR"
@@ -33,7 +32,6 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
   const [activeTab, setActiveTab] = useState("liquids")
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
-  const { addEvent } = useCareEvents(patientId)
   const isMobile = useIsMobile()
   
   // Função para obter data e hora atual no formato correto
@@ -157,9 +155,9 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           data = {
             ...data,
             occurred_at: new Date(liquidForm.time).toISOString(),
-            type: "drink",
+            type: "meal",
             volume_ml: parseInt(liquidForm.amount),
-            notes: `${liquidForm.type}${liquidForm.notes ? ' - ' + liquidForm.notes : ''}`
+            notes: `Líquido: ${liquidForm.type}${liquidForm.notes ? ' - ' + liquidForm.notes : ''}`
           }
           break
           
@@ -174,9 +172,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             ...data,
             occurred_at: new Date(foodForm.time).toISOString(),
             type: "meal",
-            volume_ml: parseInt(foodForm.amount), // Usando volume_ml para porcentagem de consumo
-            meal_desc: foodForm.description,
-            notes: `${foodForm.type}${foodForm.description ? ' - ' + foodForm.description : ''}`
+            notes: `Refeição: ${foodForm.type} - ${foodForm.amount}%${foodForm.description ? ' - ' + foodForm.description : ''}`
           }
           break
           
@@ -197,8 +193,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           break
 
         case "humor":
-          if (!humorForm.moodScale) validationError = "Escala de humor é obrigatória"
-          else if (!humorForm.happinessScale) validationError = "Escala de felicidade é obrigatória"
+          if (!humorForm.moodScale && !humorForm.happinessScale) validationError = "É necessário preencher pelo menos uma escala (humor ou felicidade)"
           
           if (validationError) {
             throw new Error(validationError)
@@ -208,7 +203,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             occurred_at: new Date(humorForm.time).toISOString(),
             type: "mood",
             mood_scale: parseInt(humorForm.moodScale),
-            happiness_scale: parseInt(humorForm.happinessScale),
+            happiness_scale: humorForm.happinessScale ? parseInt(humorForm.happinessScale) : null,
             mood_notes: humorForm.notes,
             notes: humorForm.notes
           }
@@ -226,10 +221,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             ...data,
             occurred_at: new Date(medicationForm.time).toISOString(),
             type: "medication",
-            med_name: medicationForm.name,
-            med_dose: medicationForm.dosage,
-            med_route: medicationForm.route,
-            notes: medicationForm.notes
+            notes: `Medicação: ${medicationForm.name} - ${medicationForm.dosage} - ${medicationForm.route}${medicationForm.notes ? ' - ' + medicationForm.notes : ''}`
           }
           break
 
@@ -243,12 +235,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             ...data,
             occurred_at: new Date(drainForm.time).toISOString(),
             type: "drain",
-            drain_type: drainForm.type,
-            left_amount: drainForm.leftAmount ? parseInt(drainForm.leftAmount) : null,
-            right_amount: drainForm.rightAmount ? parseInt(drainForm.rightAmount) : null,
-            left_aspect: drainForm.leftAspect || null,
-            right_aspect: drainForm.rightAspect || null,
-            notes: drainForm.notes
+            notes: `Dreno: ${drainForm.type}${drainForm.leftAmount ? ' - Esquerdo: ' + drainForm.leftAmount + 'ml' : ''}${drainForm.rightAmount ? ' - Direito: ' + drainForm.rightAmount + 'ml' : ''}${drainForm.notes ? ' - ' + drainForm.notes : ''}`
           }
           break
 
@@ -265,18 +252,10 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
             ...data,
             occurred_at: new Date(vitalSignsForm.time).toISOString(),
             type: "vital_signs",
-            systolic_bp: vitalSignsForm.systolicBP ? parseInt(vitalSignsForm.systolicBP) : null,
-            diastolic_bp: vitalSignsForm.diastolicBP ? parseInt(vitalSignsForm.diastolicBP) : null,
-            heart_rate: vitalSignsForm.heartRate ? parseInt(vitalSignsForm.heartRate) : null,
-            temperature: vitalSignsForm.temperature ? parseFloat(vitalSignsForm.temperature) : null,
-            oxygen_saturation: vitalSignsForm.oxygenSaturation ? parseInt(vitalSignsForm.oxygenSaturation) : null,
-            respiratory_rate: vitalSignsForm.respiratoryRate ? parseInt(vitalSignsForm.respiratoryRate) : null,
-            notes: vitalSignsForm.notes
+            notes: `Sinais Vitais - ${vitalSignsForm.systolicBP ? 'PA: ' + vitalSignsForm.systolicBP + '/' + vitalSignsForm.diastolicBP + ' mmHg' : ''}${vitalSignsForm.heartRate ? ' - FC: ' + vitalSignsForm.heartRate + ' bpm' : ''}${vitalSignsForm.temperature ? ' - Temp: ' + vitalSignsForm.temperature + '°C' : ''}${vitalSignsForm.oxygenSaturation ? ' - SpO2: ' + vitalSignsForm.oxygenSaturation + '%' : ''}${vitalSignsForm.respiratoryRate ? ' - FR: ' + vitalSignsForm.respiratoryRate + ' rpm' : ''}${vitalSignsForm.notes ? ' - ' + vitalSignsForm.notes : ''}`
           }
           break
       }
-      
-      await addEvent(data)
       
       // Resetar formulário após sucesso
       switch (activeTab) {
@@ -909,8 +888,11 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
           <TabsContent value="humor" className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
             <form onSubmit={handleSubmit} className={`${isMobile ? 'space-y-3' : 'space-y-4'}`}>
               <div className="grid grid-cols-1 gap-4">
+                <div className="mb-2">
+                  <p className="text-sm text-gray-600 mb-3">* Preencha pelo menos uma das escalas abaixo</p>
+                </div>
                 <div>
-                  <Label htmlFor="mood-scale" className="text-sm font-medium">Escala de Humor (1-5) *</Label>
+                  <Label htmlFor="mood-scale" className="text-sm font-medium">Escala de Humor (1-5)</Label>
                   <Select value={humorForm.moodScale} onValueChange={(value) => setHumorForm(prev => ({ ...prev, moodScale: value }))}>
                     <SelectTrigger className={`${isMobile ? 'h-12' : 'h-10 sm:h-11'}`}>
                       <SelectValue placeholder="Selecione o humor" />
@@ -926,7 +908,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                 </div>
                 
                 <div>
-                  <Label htmlFor="happiness-scale" className="text-sm font-medium">Escala de Felicidade (1-5) *</Label>
+                  <Label htmlFor="happiness-scale" className="text-sm font-medium">Escala de Felicidade (1-5)</Label>
                   <Select value={humorForm.happinessScale} onValueChange={(value) => setHumorForm(prev => ({ ...prev, happinessScale: value }))}>
                     <SelectTrigger className={`${isMobile ? 'h-12' : 'h-10 sm:h-11'}`}>
                       <SelectValue placeholder="Selecione a felicidade" />
@@ -973,8 +955,7 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
                 {loading ? "Salvando..." : "Salvar Registro de Humor"}
               </Button>
             </form>
-          </TabsContent>
-        </Tabs>
+          </TabsContent></Tabs>
       </CardContent>
     </Card>
     
@@ -988,3 +969,5 @@ export function CareForm({ patientId, onSave }: CareFormProps) {
   </>
   )
 }
+
+export default CareForm

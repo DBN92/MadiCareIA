@@ -1,5 +1,24 @@
 import OpenAI from 'openai';
 
+// Função para validar se a API key é válida
+function isValidApiKey(apiKey: string): boolean {
+  if (!apiKey || apiKey.trim() === '') {
+    return false;
+  }
+  
+  // Verifica se a API key tem o formato correto da OpenAI
+  if (!apiKey.startsWith('sk-') || apiKey.length < 20) {
+    return false;
+  }
+  
+  // Verifica se não é uma chave placeholder
+  if (apiKey === 'your-openai-api-key-here' || apiKey === 'sk-your-key-here') {
+    return false;
+  }
+  
+  return true;
+}
+
 // Função para obter as configurações do chat do localStorage
 function getChatSettings() {
   try {
@@ -13,7 +32,7 @@ function getChatSettings() {
   
   // Configurações padrão se não houver no localStorage
   return {
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+    apiKey: '', // Não usar variável de ambiente como padrão por segurança
     model: 'gpt-3.5-turbo',
     temperature: 0.7,
     maxTokens: 1000,
@@ -40,13 +59,13 @@ Sempre seja preciso, profissional e mantenha a confidencialidade médica. Respon
 // Configuração da API OpenAI usando as configurações salvas
 let chatSettings = getChatSettings();
 
-// Verifica se a API key está configurada
-if (!chatSettings.apiKey || chatSettings.apiKey === 'your-openai-api-key-here') {
+// Verifica se a API key está configurada e é válida
+if (!isValidApiKey(chatSettings.apiKey)) {
   console.warn('API key da OpenAI não está configurada ou é inválida. O chat não funcionará.');
 }
 
 const openai = new OpenAI({
-  apiKey: chatSettings.apiKey,
+  apiKey: chatSettings.apiKey || 'sk-invalid', // Usar chave inválida se não houver uma válida
   dangerouslyAllowBrowser: true
 });
 
@@ -97,11 +116,11 @@ export class OpenAIService {
       // Recarrega as configurações antes de cada chamada
       chatSettings = getChatSettings();
 
-      // Verifica se a API key está disponível
-      if (!chatSettings.apiKey || chatSettings.apiKey === '') {
+      // Verifica se a API key está disponível e é válida
+      if (!isValidApiKey(chatSettings.apiKey)) {
         console.error('API key da OpenAI não configurada ou inválida');
         return {
-          message: 'Desculpe, o serviço de chat não está disponível no momento. A chave da API OpenAI não está configurada corretamente. Entre em contato com o administrador.',
+          message: 'Desculpe, o serviço de chat não está disponível no momento. A chave da API OpenAI não está configurada corretamente. Por favor, configure uma chave válida nas configurações.',
           error: 'API key não configurada ou inválida'
         };
       }
@@ -222,3 +241,6 @@ export class OpenAIService {
 
 // Instância singleton do serviço
 export const openAIService = new OpenAIService();
+
+// Exporta a função de validação para uso em outros componentes
+export { isValidApiKey };

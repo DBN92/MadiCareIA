@@ -239,9 +239,9 @@ const FamilyCare = ({ patient, permissions }: FamilyCareProps) => {
                         </CardTitle>
                         <CardDescription className="flex items-center gap-2 mt-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(event.created_at).toLocaleDateString('pt-BR')}
+                          {new Date(event.occurred_at || event.created_at).toLocaleDateString('pt-BR')}
                           <Clock className="h-3 w-3 ml-2" />
-                          {new Date(event.created_at).toLocaleTimeString('pt-BR', {
+                          {new Date(event.occurred_at || event.created_at).toLocaleTimeString('pt-BR', {
                             hour: '2-digit',
                             minute: '2-digit'
                           })}
