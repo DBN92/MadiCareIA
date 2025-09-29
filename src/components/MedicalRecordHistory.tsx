@@ -6,6 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   CalendarIcon, 
   Search, 
@@ -18,7 +28,8 @@ import {
   Download,
   Share,
   Trash2,
-  Plus
+  Plus,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -53,6 +64,10 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
   const [records, setRecords] = useState<MedicalRecordWithRelations[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<MedicalRecordWithRelations[]>([]);
+  
+  // Estados para modal de confirmação de exclusão
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<{id: string, patientName: string} | null>(null);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -183,15 +198,13 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
   };
 
   const handleDeleteRecord = async (recordId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este prontuário?')) {
-      return;
-    }
+    if (!recordToDelete) return;
 
     try {
       const { error } = await supabase
         .from('medical_records')
         .delete()
-        .eq('id', recordId);
+        .eq('id', recordToDelete.id);
 
       if (error) throw error;
 
@@ -201,6 +214,8 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
       });
 
       loadRecords();
+      setShowDeleteDialog(false);
+      setRecordToDelete(null);
     } catch (error) {
       console.error('Erro ao excluir prontuário:', error);
       toast({
@@ -209,6 +224,16 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
         variant: "destructive"
       });
     }
+  };
+
+  const openDeleteDialog = (recordId: string, patientName: string) => {
+    setRecordToDelete({ id: recordId, patientName });
+    setShowDeleteDialog(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setRecordToDelete(null);
   };
 
   if (loading) {
@@ -412,7 +437,7 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteRecord(record.id)}
+                      onClick={() => openDeleteDialog(record.id, record.patient.name)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -439,6 +464,38 @@ const MedicalRecordHistory: React.FC<MedicalRecordHistoryProps> = ({
           ))
         )}
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Tem certeza que deseja excluir o prontuário do paciente{' '}
+                <strong>{recordToDelete?.patientName}</strong>?
+              </p>
+              <p className="text-red-600 font-medium">
+                ⚠️ Esta ação não pode ser desfeita. Todos os dados do prontuário serão perdidos permanentemente.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeDeleteDialog}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDeleteRecord(recordToDelete?.id || '')}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir Prontuário
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
